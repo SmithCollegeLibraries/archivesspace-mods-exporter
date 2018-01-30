@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mods xmlns="http://www.loc.gov/mods/v3"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:xlink="http://www.w3.org/1999/xlink"
+      xmlns:mods="http://www.loc.gov/mods/v3"
+      xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd">
+
+<titleInfo>
+  <title>{{ archival_object.title }}</title>
+</titleInfo>
+
+
+
+{% if subjects %}
+{% for subject in subjects %}
+<subject{% if subject.authority %} authority="{{ subject.authority }}"{% endif %}{% if subject.authority_id %} valueURI="{{ subject.authority_id }}"{% endif %}>
+  <topic>{{ subject.title }}</topic>
+</subject>
+{% endfor %}
+{% endif %}
+
+<location>
+  <physicalLocation>{{ repository.parent_institution_name }}</physicalLocation>
+</location>
+
+{% if agents %}
+{% for agent in agents %}
+<subject authority="{{ agent.authority }}" {% if agent.authority_id %} valueURI="{{ agent.authority_id }}" {% endif %}>
+  <topic>{{ agent.term }}</topic>
+</subject>
+{% endfor %}
+{% endif %}
+
+</mods>

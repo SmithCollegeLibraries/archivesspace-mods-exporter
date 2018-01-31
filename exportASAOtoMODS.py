@@ -5,9 +5,18 @@ from utilities import *
 aspace = archivesspace.ArchivesSpace('http', 'aspace.smith.edu', '9999', 'tchambers', 'changeme')
 aspace.connect()
 
+"""
+Query ArchivesSpace API for details about an Archival Object and format the
+resulting data in MODS format using a jinja template.
+
+TODO write sample data importer so I can write doctests
+
+"""
+
 # Retrieve the DO
 # Find the DO's parent AO
-archival_object = aspace.requestGet('/repositories/2/archival_objects/105443')
+# archival_object = aspace.requestGet('/repositories/2/archival_objects/105443')
+archival_object = aspace.requestGet('/repositories/2/archival_objects/159445')
 # Find the AO's parent resource
 # 845
 def getResource(archival_object):
@@ -30,38 +39,68 @@ class AoGeneologyChain(object):
         '''Traverse all parent AOs and save them to a list. Also tack on the
         Resource Record.
         '''
-        def wrapUp(aoGeneologyChain):
-            resource = getResource(archival_object)
-            aoGeneologyChain.append(resource)
-            return aoGeneologyChain
+        # def wrapUp(aoGeneologyChain):
+        #     resource = getResource(archival_object)
+        #     aoGeneologyChain.append(resource)
+        #     return aoGeneologyChain
+        # 
+        # aoGeneologyChain = []
+        # for i in range(100):
+        #     aoGeneologyChain.append(archival_object)
+        #     try:
+        #         parentUri = archival_object['parent']['ref']
+        #     except KeyError:
+        #         self.aoGeneologyChain = wrapUp(aoGeneologyChain)
+        #     archival_object = aspace.requestGet(parentUri)
+        # self.aoGeneologyChain = wrapUp(aoGeneologyChain)
 
-        aoGeneologyChain = []
+        # restructuring
+        newGeneologyChain = dict()
+        newGeneologyChain['object'] = archival_object
+        newGeneologyChain['parents'] = []
+        newGeneologyChain['resource'] = getResource(archival_object)
         for i in range(100):
-            aoGeneologyChain.append(archival_object)
             try:
                 parentUri = archival_object['parent']['ref']
             except KeyError:
-                self.aoGeneologyChain = wrapUp(aoGeneologyChain)
+                break
             archival_object = aspace.requestGet(parentUri)
-        self.aoGeneologyChain = wrapUp(aoGeneologyChain)
+            newGeneologyChain['parents'].append(archival_object)
+        self.newGeneologyChain = newGeneologyChain
 
-    def getSubjects(self):
-        '''Get subject data by merging subjects from the Archival Object and its
-        parent archival objects.
+    def __repr__(self):
+        return(pprint.pformat(self.newGeneologyChain))
+
+    def getSubjects(self, archival_object):
+        '''Dereference subjects from a given Archival Object or Resource Record
+        and load data into a list.
         '''
         subjects = []
-        for archival_object in self.aoGeneologyChain:
-            try:
-                for subject in archival_object['subjects']:
-                    subjectData = aspace.requestGet(subject['ref'])
-                    subjects.append(subjectData)
-            except KeyError:
-                pass
+        for subject in archival_object['subjects']:
+            subjectData = aspace.requestGet(subject['ref'])
+            subjects.append(subjectData)
+        return subjects
+
+    def getFirstSubjects(self):
+        '''Get subject data from either the current Archival Object, its parent
+        Archival Objects, or the Resource Record. 'Lazily' i.e. stop as soon as
+        I find subjects as I traverse up the geneology chain.
+        '''
+        subjects = []
+        
+        subjects.extend(self.getSubjects(self.newGeneologyChain['object']))
+        if subjects:
+            return subjects
+        for archival_object in self.newGeneologyChain['parents']:
+            subjects.extend(self.getSubjects(archival_object))
+            if subjects:
+                return subjects
+        subjects.extend(self.getSubjects(self.newGeneologyChain['resource']))
         return subjects
 
     def getNotesByType(self, noteType):
-        '''Traverse all parent AOs and the Resource Record and get all the notes of
-        given type
+        '''Traverse all parent AOs and the Resource Record and get all the
+        notes of given type
         '''
         notes = []
         for archival_object in self.aoGeneologyChain:
@@ -86,7 +125,7 @@ mychain = AoGeneologyChain(archival_object)
 
 
 # Traverse all parent AOs and the Resource Record and get their subjects
-subjects = mychain.getSubjects()
+subjects = mychain.getFirstSubjects()
 
 # Debug
 #pprint.pprint(subjects)
@@ -94,15 +133,15 @@ subjects = mychain.getSubjects()
 # Get genre data
 # Get agent data
 # Get notes data
-allNotes = mychain.getNotes()
-notesToPublish = dict()
-notesToPublish['accessrestrict'] = []
-
-try:
-    notesToPublish['accessrestrict'].append(allNotes['accessrestrict'][0])
-    notesToPublish['accessrestrict'].append(allNotes['accessrestrict'][-1])
-except KeyError:
-    pass
+#allNotes = mychain.getNotes()
+# notesToPublish = dict()
+# notesToPublish['accessrestrict'] = []
+# 
+# try:
+#     notesToPublish['accessrestrict'].append(allNotes['accessrestrict'][0])
+#     notesToPublish['accessrestrict'].append(allNotes['accessrestrict'][-1])
+# except KeyError:
+#     pass
 
 import pdb; pdb.set_trace()
 

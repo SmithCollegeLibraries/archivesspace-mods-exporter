@@ -109,16 +109,7 @@ class AoGeneologyChain(object):
         Archival Objects, or the Resource Record. 'Lazily' i.e. stop as soon as
         I find subjects as I traverse up the geneology chain.
         '''
-        subjects = []
-        
-        subjects.extend(self.dereferenceRefs(self.newGeneologyChain['object'], 'subjects'))
-        if subjects:
-            return subjects
-        for archival_object in self.newGeneologyChain['parents']:
-            subjects.extend(self.dereferenceRefs(archival_object, 'subjects'))
-            if subjects:
-                return subjects
-        subjects.extend(self.dereferenceRefs(self.newGeneologyChain['resource'], 'subjects'))
+        subjects = self.lazyFind('subjects')
         return subjects
 
     def getAgentsConstelation(self):

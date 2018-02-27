@@ -9,8 +9,6 @@
   <title>{{ archival_object.title }}</title>
 </titleInfo>
 
-
-
 {% if subjects %}
 {% for subject in subjects %}
 <subject{% if subject.authority %} authority="{{ subject.authority }}"{% endif %}{% if subject.authority_id %} valueURI="{{ subject.authority_id }}"{% endif %}>
@@ -23,10 +21,10 @@
   <physicalLocation>{{ repository.parent_institution_name }}</physicalLocation>
 </location>
 
-{% if agents %}
-{% for agent in agents %}
-<subject authority="{{ agent.authority }}" {% if agent.authority_id %} valueURI="{{ agent.authority_id }}" {% endif %}>
-  <topic>{{ agent.term }}</topic>
+{% if agents.subjects %}
+{% for agent in agents.subjects %}
+<subject{% if agent.display_name.source %} authority="{{ agent.display_name.source }}"{% endif %} {% if agent.display_name.authority_id %} valueURI="{{ agent.display_name.authority_id }}" {% endif %}>
+  <topic>{{ agent.title }}</topic>
 </subject>
 {% endfor %}
 {% endif %}

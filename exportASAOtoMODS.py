@@ -9,9 +9,15 @@ aspace.connect()
 Query ArchivesSpace API for details about an Archival Object and format the
 resulting data in MODS format using a jinja template.
 
-TODO write sample data importer so I can write doctests
+Concepts:
+
+# Geneology Chain
+
+# Constelation
 
 """
+
+NOTETYPESURI = '/config/enumerations/45'
 
 # Retrieve the DO
 # Find the DO's parent AO
@@ -71,15 +77,32 @@ class AoGeneologyChain(object):
     def __repr__(self):
         return(pprint.pformat(self.newGeneologyChain))
 
-    def getSubjects(self, archival_object):
-        '''Dereference subjects from a given Archival Object or Resource Record
+    def dereferenceRefs(self, archival_object, elementsName):
+        '''Dereference references from a given Archival Object or Resource Record
         and load data into a list.
         '''
-        subjects = []
-        for subject in archival_object['subjects']:
-            subjectData = aspace.requestGet(subject['ref'])
-            subjects.append(subjectData)
-        return subjects
+        elements = []
+#        import pdb; pdb.set_trace()
+        try:
+            for element in archival_object[elementsName]:
+                elementData = aspace.requestGet(element['ref'])
+                elements.append(elementData)
+        except KeyError:
+            pass
+        return elements
+
+    def lazyFind(self, type):
+        list = []
+        
+        list.extend(self.dereferenceRefs(self.newGeneologyChain['object'], type))
+        if list:
+            return list
+        for archival_object in self.newGeneologyChain['parents']:
+            list.extend(self.dereferenceRefs(archival_object, type))
+            if list:
+                return list
+        list.extend(self.dereferenceRefs(self.newGeneologyChain['resource'], type))
+        return list
 
     def getSubjectsConstelation(self):
         '''Get subject data from either the current Archival Object, its parent
@@ -88,15 +111,32 @@ class AoGeneologyChain(object):
         '''
         subjects = []
         
-        subjects.extend(self.getSubjects(self.newGeneologyChain['object']))
+        subjects.extend(self.dereferenceRefs(self.newGeneologyChain['object'], 'subjects'))
         if subjects:
             return subjects
         for archival_object in self.newGeneologyChain['parents']:
-            subjects.extend(self.getSubjects(archival_object))
+            subjects.extend(self.dereferenceRefs(archival_object, 'subjects'))
             if subjects:
                 return subjects
-        subjects.extend(self.getSubjects(self.newGeneologyChain['resource']))
+        subjects.extend(self.dereferenceRefs(self.newGeneologyChain['resource'], 'subjects'))
         return subjects
+
+    def getAgentsConstelation(self):
+        agentsAnyType = self.lazyFind('linked_agents')
+        agents = {}
+        # Sort agents out into their roles for different uses in the MARC record
+        agents['creators'] = []
+        agents['donors'] = []
+        agents['subjects'] = []
+        for agent in agentsAnyType:
+            for role in agent['linked_agent_roles']:
+                if role == 'creator':
+                    agents['creators'].append(agent)
+                if role == 'source':
+                    agents['donors'].append(agent)
+                if role == 'subject':
+                    agents['subjects'].append(agent)
+        return agents
 
     def getNotesByType(self, noteType):
         '''Traverse all parent AOs and the Resource Record and get all the
@@ -114,7 +154,7 @@ class AoGeneologyChain(object):
 
     def getAllNotes(self):
         # Get list of controled values for note types
-        enums = aspace.requestGet('/config/enumerations/45')
+        enums = aspace.requestGet(NOTETYPESURI)
         noteTypeS = enums['values']
         notes = dict()
         for noteType in noteTypeS:
@@ -126,9 +166,10 @@ mychain = AoGeneologyChain(archival_object)
 
 # Traverse all parent AOs and the Resource Record and get their subjects
 subjects = mychain.getSubjectsConstelation()
-
+agents = mychain.getAgentsConstelation()
 # Debug
-#pprint.pprint(subjects)
+pprint.pprint(agents['subjects'])
+#import pdb; pdb.set_trace()
 
 # Get genre data
 # Get agent data
@@ -143,10 +184,9 @@ subjects = mychain.getSubjectsConstelation()
 # except KeyError:
 #     pass
 
-#import pdb; pdb.set_trace()
 
 # Compile all the data into a big structure for jinja
-data = { 'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects }
+data = { 'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents }
 
 # Set up jinja loader and template objects
 templateLoader = jinja2.FileSystemLoader( searchpath="." )

@@ -81,7 +81,7 @@ class AoGeneologyChain(object):
             subjects.append(subjectData)
         return subjects
 
-    def getFirstSubjects(self):
+    def getSubjectsConstelation(self):
         '''Get subject data from either the current Archival Object, its parent
         Archival Objects, or the Resource Record. 'Lazily' i.e. stop as soon as
         I find subjects as I traverse up the geneology chain.
@@ -112,7 +112,7 @@ class AoGeneologyChain(object):
                 pass
         return notes
 
-    def getNotes(self):
+    def getAllNotes(self):
         # Get list of controled values for note types
         enums = aspace.requestGet('/config/enumerations/45')
         noteTypeS = enums['values']
@@ -125,7 +125,7 @@ mychain = AoGeneologyChain(archival_object)
 
 
 # Traverse all parent AOs and the Resource Record and get their subjects
-subjects = mychain.getFirstSubjects()
+subjects = mychain.getSubjectsConstelation()
 
 # Debug
 #pprint.pprint(subjects)
@@ -143,7 +143,7 @@ subjects = mychain.getFirstSubjects()
 # except KeyError:
 #     pass
 
-import pdb; pdb.set_trace()
+#import pdb; pdb.set_trace()
 
 # Compile all the data into a big structure for jinja
 data = { 'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects }

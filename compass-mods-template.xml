@@ -9,6 +9,7 @@
   <title>{{ archival_object.title }}</title>
 </titleInfo>
 
+<!-- Subjects -->
 {% if subjects %}
 {% for subject in subjects %}
 <subject{% if subject.authority %} authority="{{ subject.authority }}"{% endif %}{% if subject.authority_id %} valueURI="{{ subject.authority_id }}"{% endif %}>
@@ -16,11 +17,7 @@
 </subject>
 {% endfor %}
 {% endif %}
-
-<location>
-  <physicalLocation>{{ repository.parent_institution_name }}</physicalLocation>
-</location>
-
+<!-- Subjects from agents -->
 {% if agents.subjects %}
 {% for agent in agents.subjects %}
 <subject{% if agent.display_name.source %} authority="{{ agent.display_name.source }}"{% endif %} {% if agent.display_name.authority_id %} valueURI="{{ agent.display_name.authority_id }}" {% endif %}>
@@ -28,5 +25,9 @@
 </subject>
 {% endfor %}
 {% endif %}
+
+<location>
+  <physicalLocation>{{ repository.parent_institution_name }}</physicalLocation>
+</location>
 
 </mods>

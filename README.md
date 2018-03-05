@@ -17,9 +17,10 @@ Can I pass the tool a list of AS digital object ids to be fetched?
 [x] Output MODS XML
 [x] Title
 [x] Subjects with inheritance logic
-[ ] Agents as creator, donor, subject with inheritance logic
+[ ] Agents inheritance logic as creator, donor, subject
 [ ] Notes
 [ ] Misc remaining flat fields
+[ ] Digital object starting point
 [ ] Select group of items to be exported Output as file?
 [ ] or Turn into module that can be used by a processing script
 [ ] Save to a file?

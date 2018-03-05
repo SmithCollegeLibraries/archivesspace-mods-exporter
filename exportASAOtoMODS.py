@@ -82,7 +82,7 @@ class AoGeneologyChain(object):
         and load data into a list.
         '''
         elements = []
-#        import pdb; pdb.set_trace()
+
         try:
             for element in archival_object[elementsName]:
                 elementData = aspace.requestGet(element['ref'])
@@ -91,20 +91,30 @@ class AoGeneologyChain(object):
             pass
         return elements
 
-    def lazyFind(self, type):
-        list = []
+    def lazyFind(self, mytype):
+        """Get fields of a given type from the newGeneologyChain in a "lazy"
+        manner, i.e. stop at the first instance. If nothing is found, return an
+        empty list.
+        """
+        mylist = [] # Start a running list
         
-        list.extend(self.dereferenceRefs(self.newGeneologyChain['object'], type))
-        if list:
-            return list
-        for archival_object in self.newGeneologyChain['parents']:
-            list.extend(self.dereferenceRefs(archival_object, type))
-            if list:
-                return list
-        list.extend(self.dereferenceRefs(self.newGeneologyChain['resource'], type))
-        return list
+        # If the field exists in the initial decendant object stop there
+        mylist.extend(self.dereferenceRefs(self.newGeneologyChain['object'], mytype))
+        if mylist:
+            return mylist
 
-    def getSubjectsConstelation(self):
+        # If not, look in the parent Archival Objects. If I find something good
+        # stop and return that.
+        for archival_object in self.newGeneologyChain['parents']:
+            mylist.extend(self.dereferenceRefs(archival_object, mytype))
+            if mylist:
+                return mylist
+        
+        # If all else fails, try to find it in the Resource Record
+        mylist.extend(self.dereferenceRefs(self.newGeneologyChain['resource'], mytype))
+        return mylist
+
+    def getSubjectsInherited(self):
         '''Get subject data from either the current Archival Object, its parent
         Archival Objects, or the Resource Record. 'Lazily' i.e. stop as soon as
         I find subjects as I traverse up the geneology chain.
@@ -112,8 +122,12 @@ class AoGeneologyChain(object):
         subjects = self.lazyFind('subjects')
         return subjects
 
-    def getAgentsConstelation(self):
+    def getAgentsInherited(self):
+        """Get agents running up the inheritance chain handling them
+        independently by type: creator, source, subject.
+        """
         agentsAnyType = self.lazyFind('linked_agents')
+        import pdb; pdb.set_trace()
         agents = {}
         # Sort agents out into their roles for different uses in the MARC record
         agents['creators'] = []
@@ -156,11 +170,11 @@ mychain = AoGeneologyChain(archival_object)
 
 
 # Traverse all parent AOs and the Resource Record and get their subjects
-subjects = mychain.getSubjectsConstelation()
-agents = mychain.getAgentsConstelation()
+subjects = mychain.getSubjectsInherited()
+agents = mychain.getAgentsInherited()
 # Debug
 pprint.pprint(agents['subjects'])
-#import pdb; pdb.set_trace()
+import pdb; pdb.set_trace()
 
 # Get genre data
 # Get agent data

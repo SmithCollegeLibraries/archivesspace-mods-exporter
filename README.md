@@ -52,6 +52,10 @@ Does the output XML contain subjects with the subject names from the parent Arch
 2. If I export a Digital Object and it has subjects directly associated with it,
 Does the output XML contain only subjects with the subject names from the digital object, and not those from the parent Archival Object or Resource Record?
 
+## Agents tests
+
+1. If I link an agent record to a parent Archival Object and the Resource Record does the output XML contain that agent of the parent Archival Object, but not the Resource Record?
+
 ## Teardown
 ...
 

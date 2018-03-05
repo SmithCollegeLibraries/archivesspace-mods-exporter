@@ -79,7 +79,7 @@ class AoGeneologyChain(object):
 
     def dereferenceRefs(self, archival_object, elementsName):
         '''Dereference references from a given Archival Object or Resource Record
-        and load data into a list.
+        and return them as a list.
         '''
         elements = []
 
@@ -114,6 +114,50 @@ class AoGeneologyChain(object):
         mylist.extend(self.dereferenceRefs(self.newGeneologyChain['resource'], mytype))
         return mylist
 
+    def TEST_lazySubFind(self, mytype, subtypeFieldName='', subtype=''):
+        """Get fields of a given type from the newGeneologyChain in a "lazy"
+        manner, i.e. stop at the first instance. If nothing is found, return an
+        empty list.
+        """
+
+        mylist = [] # Start a running list
+        
+        def findAgentsByType(subtypeFieldName, subtype):
+            myagents = []
+            for item in mylist:
+                # Within each item there's a list of subtypes
+                # Is it one of the ones I'm looking for?
+                for role in item[subtypeFieldName]:
+                    if role == subtype:
+                        # If so, add it to the list of agents of the desired type
+                        myagents.append(item)
+            return myagents
+
+        # If the field exists in the initial decendant object stop there
+        mylist.extend(self.dereferenceRefs(self.newGeneologyChain['object'], mytype))
+        if mylist:
+            # Run through the list to see if there are any of the desired subtype
+            myagents = findAgentsByType(subtypeFieldName, subtype)
+            if myagents:
+                return myagents
+
+        # If not, look in the parent Archival Objects. If I find something good
+        # stop and return that.
+        for archival_object in self.newGeneologyChain['parents']:
+            mylist.extend(self.dereferenceRefs(archival_object, mytype))
+            if mylist:
+                # Run through the list to see if there are any of the desired subtype
+                myagents = findAgentsByType(subtypeFieldName, subtype)
+                if myagents:
+                    return myagents
+        
+        # If all else fails, try to find it in the Resource Record
+        mylist.extend(self.dereferenceRefs(self.newGeneologyChain['resource'], mytype))
+        # Run through the list to see if there are any of the desired subtype
+        myagents = findAgentsByType(subtypeFieldName, subtype)
+        if myagents:
+            return myagents
+
     def getSubjectsInherited(self):
         '''Get subject data from either the current Archival Object, its parent
         Archival Objects, or the Resource Record. 'Lazily' i.e. stop as soon as
@@ -127,20 +171,25 @@ class AoGeneologyChain(object):
         independently by type: creator, source, subject.
         """
         agentsAnyType = self.lazyFind('linked_agents')
-        import pdb; pdb.set_trace()
+
         agents = {}
         # Sort agents out into their roles for different uses in the MARC record
         agents['creators'] = []
         agents['donors'] = []
         agents['subjects'] = []
-        for agent in agentsAnyType:
-            for role in agent['linked_agent_roles']:
-                if role == 'creator':
-                    agents['creators'].append(agent)
-                if role == 'source':
-                    agents['donors'].append(agent)
-                if role == 'subject':
-                    agents['subjects'].append(agent)
+        agents['creators'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName = 'linked_agent_roles', subtype = 'creator')
+        agents['donors'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName = 'linked_agent_roles', subtype = 'source')
+        agents['subjects'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName = 'linked_agent_roles', subtype = 'subject')
+#        pprint.pprint(agents)
+
+        # for agent in agentsAnyType:
+        #     for role in agent['linked_agent_roles']:
+        #         if role == 'creator':
+        #             agents['creators'].append(agent)
+        #         if role == 'source':
+        #             agents['donors'].append(agent)
+        #         if role == 'subject':
+        #             agents['subjects'].append(agent)
         return agents
 
     def getNotesByType(self, noteType):
@@ -173,7 +222,7 @@ mychain = AoGeneologyChain(archival_object)
 subjects = mychain.getSubjectsInherited()
 agents = mychain.getAgentsInherited()
 # Debug
-pprint.pprint(agents['subjects'])
+pprint.pprint(agents)
 import pdb; pdb.set_trace()
 
 # Get genre data

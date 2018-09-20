@@ -25,6 +25,30 @@
 </subject>
 {% endfor %}
 {% endif %}
+<!-- Agents as creators or donors -->
+{% if agents.creators %}
+{% for agent in agents.creators %}
+<name>
+  <role>
+    <roleTerm type="text" authority="marcrelator">creator</roleTerm>
+    <roleTerm type="code" authority="marcrelator">cre</roleTerm>
+  </role>
+  <namePart>{{agent.title}}</namePart>
+</name>
+{% endfor %}
+{% endif %}
+{% if agents.donors %}
+{% for agent in agents.donors %}
+<name>
+  <role>
+    <roleTerm type="text" authority="marcrelator">donor</roleTerm>
+    <roleTerm type="code" authority="marcrelator">dnr</roleTerm>
+  </role>
+  <namePart>{{agent.title}}</namePart>
+</name>
+{% endfor %}
+{% endif %}
+
 
 <location>
   <physicalLocation>{{ repository.parent_institution_name }}</physicalLocation>

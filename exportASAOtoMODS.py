@@ -222,8 +222,8 @@ mychain = AoGeneologyChain(archival_object)
 subjects = mychain.getSubjectsInherited()
 agents = mychain.getAgentsInherited()
 # Debug
-pprint.pprint(agents)
-import pdb; pdb.set_trace()
+#pprint.pprint(agents)
+#import pdb; pdb.set_trace()
 
 # Get genre data
 # Get agent data

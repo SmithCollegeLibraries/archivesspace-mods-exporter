@@ -170,7 +170,7 @@ class AoGeneologyChain(object):
         """Get agents running up the inheritance chain handling them
         independently by type: creator, source, subject.
         """
-        agentsAnyType = self.lazyFind('linked_agents')
+        # agentsAnyType = self.lazyFind('linked_agents')
 
         agents = {}
         # Sort agents out into their roles for different uses in the MARC record

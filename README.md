@@ -3,13 +3,13 @@
 # Usage
 
 # Acceptance Criteria
-Does the script generate a valid MODS XML file?
-Does the output map data from the appropriate ArchivesSpace records? (see documentation)
-Does the output contain all of the relevant fields? (see documentation)
-Does the output fallback to the appropriate ancestor data element? (see documentation)
-Can the XML template file be tweaked by a non-coder?
-Is there an automated test to verify that the tool is functional?
-Can I pass the tool a list of AS digital object ids to be fetched?
+- Does the script generate a valid MODS XML file?
+- Does the output map data from the appropriate ArchivesSpace records? (see documentation)
+- Does the output contain all of the relevant fields? (see documentation)
+- Does the output fallback to the appropriate ancestor data element? (see documentation)
+- Can the XML template file be tweaked by a non-coder?
+- Is there an automated test to verify that the tool is functional?
+- Can I pass the tool a list of AS digital object ids to be fetched?
 
 # Project Completion
 [x] Query AS
@@ -66,3 +66,7 @@ Does the output XML contain only subjects with the subject names from the digita
 ...
 
 # Scratch
+Next steps:
+- Creators: Leslie missing
+- Donors: Margaret is showing
+- wiki rules text wrong. last sentence.

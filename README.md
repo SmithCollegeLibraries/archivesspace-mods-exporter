@@ -54,7 +54,13 @@ Does the output XML contain only subjects with the subject names from the digita
 
 ## Agents tests
 
-1. If I link an agent record to a parent Archival Object and the Resource Record does the output XML contain that agent of the parent Archival Object, but not the Resource Record?
+1. If I link an agent record as a creator to a parent Archival Object and the Resource Record -- does the output XML contain that agent of the parent Archival Object, but not the Resource Record?
+
+1. Assuming the above conditions if I link an agent as a source to a parent Archival Object or the Resource Record -- does the output XML contain that source agent of the parent Archival Object, or Resource Record, AND the creator agent from the Archival Object?
+
+1. If I link an agent record as a source, subject, or creator to a parent Archival Object and the Resource Record -- does the output XML contain that agent of the parent Archival Object, but not the Resource Record?
+
+2. If I link an agent to a Digital Object record and also to a parent level such as Archival Object or Resource Record -- does the output XML contain that agent of the Digital Object record but not the Archival Object, or Resource Record?
 
 ## Teardown
 ...

@@ -41,7 +41,7 @@ Create an Archival Object as child of the Sub-Series (File)
 Create a Digital Object as child of the Sub-Series Archival Object
 
 ## Basic test (title)
-1. When I export a digital object record does the output contain MODS XML and does the title element contain the title of the Archival Object (not the digital object?)
+1. When I export a digital object record does the output contain MODS XML and does the title element contain the title of the Archival Object (not the digital object)?
 
 ## Subject tests
 https://github.com/smith-special-collections/sc-documentation/wiki/Rules-for-description-inheritance-for-digital-object-records
@@ -50,7 +50,7 @@ https://github.com/smith-special-collections/sc-documentation/wiki/Rules-for-des
 Does the output XML contain subjects with the subject names from the parent Archival Object or Resource Record?
 
 2. If I export a Digital Object and it has subjects directly associated with it,
-Does the output XML contain only subjects with the subject names from the digital object, and not those from the parent Archival Object or Resource Record?
+does the output XML contain only subjects with the subject names from the digital object, and not those from the parent Archival Object or Resource Record?
 
 ## Agents tests
 

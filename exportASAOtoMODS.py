@@ -2,7 +2,7 @@ from archivesspace import archivesspace
 import jinja2
 import pprint
 from utilities import *
-aspace = archivesspace.ArchivesSpace('http', 'aspace.smith.edu', '9999', 'tchambers', 'changeme')
+aspace = archivesspace.ArchivesSpace('http', 'archivesspace-test.smith.edu', '9999', 'tchambers', 'changeme')
 aspace.connect()
 
 """
@@ -21,14 +21,14 @@ NOTETYPESURI = '/config/enumerations/45'
 
 # Retrieve the DO
 # Find the DO's parent AO
-# archival_object = aspace.requestGet('/repositories/2/archival_objects/105443')
-archival_object = aspace.requestGet('/repositories/2/archival_objects/159445')
+# archival_object = aspace.get('/repositories/2/archival_objects/105443')
+archival_object = aspace.get('/repositories/2/archival_objects/159445')
 # Find the AO's parent resource
 # 845
 def getResource(archival_object):
     'Get the Resource Record of a given Archival Object'
     resource_uri = archival_object['resource']['ref']
-    resource = aspace.requestGet(resource_uri)
+    resource = aspace.get(resource_uri)
     return resource
 resource = getResource(archival_object)
 
@@ -36,7 +36,7 @@ resource = getResource(archival_object)
 def getRepository(archival_object):
     'Get the repository of a given Archival Object'
     repository_uri = archival_object['repository']['ref']
-    repository = aspace.requestGet(repository_uri)
+    repository = aspace.get(repository_uri)
     return repository
 repository = getRepository(archival_object)
 
@@ -57,7 +57,7 @@ class AoGeneologyChain(object):
         #         parentUri = archival_object['parent']['ref']
         #     except KeyError:
         #         self.aoGeneologyChain = wrapUp(aoGeneologyChain)
-        #     archival_object = aspace.requestGet(parentUri)
+        #     archival_object = aspace.get(parentUri)
         # self.aoGeneologyChain = wrapUp(aoGeneologyChain)
 
         # restructuring
@@ -70,7 +70,7 @@ class AoGeneologyChain(object):
                 parentUri = archival_object['parent']['ref']
             except KeyError:
                 break
-            archival_object = aspace.requestGet(parentUri)
+            archival_object = aspace.get(parentUri)
             newGeneologyChain['parents'].append(archival_object)
         self.newGeneologyChain = newGeneologyChain
 
@@ -85,7 +85,7 @@ class AoGeneologyChain(object):
 
         try:
             for element in archival_object[elementsName]:
-                elementData = aspace.requestGet(element['ref'])
+                elementData = aspace.get(element['ref'])
                 elements.append(elementData)
         except KeyError:
             pass
@@ -208,7 +208,7 @@ class AoGeneologyChain(object):
 
     def getAllNotes(self):
         # Get list of controled values for note types
-        enums = aspace.requestGet(NOTETYPESURI)
+        enums = aspace.get(NOTETYPESURI)
         noteTypeS = enums['values']
         notes = dict()
         for noteType in noteTypeS:

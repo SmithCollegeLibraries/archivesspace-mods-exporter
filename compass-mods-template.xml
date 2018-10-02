@@ -54,4 +54,7 @@
   <physicalLocation>{{ repository.parent_institution_name }}</physicalLocation>
 </location>
 
+
+<note type="preferred citation" displayLabel="Preferred Citation">{{ archival_object.title }}, {{ collecting_unit }}, {{ ms_no }}, {{ repository.parent_institution_name }}, Northampton, Massachusetts.</note>
+
 </mods>

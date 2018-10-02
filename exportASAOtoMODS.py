@@ -2,7 +2,7 @@ from archivesspace import archivesspace
 import jinja2
 import pprint
 from utilities import *
-aspace = archivesspace.ArchivesSpace('http', 'archivesspace-test.smith.edu', '9999', 'tchambers', 'changeme')
+aspace = archivesspace.ArchivesSpace('http', 'archivesspace-test.smith.edu', '9999', 'cmarshall', 'aspace1')
 aspace.connect()
 
 """
@@ -25,20 +25,55 @@ NOTETYPESURI = '/config/enumerations/45'
 archival_object = aspace.get('/repositories/2/archival_objects/159445')
 # Find the AO's parent resource
 # 845
+
+
 def getResource(archival_object):
     'Get the Resource Record of a given Archival Object'
     resource_uri = archival_object['resource']['ref']
     resource = aspace.get(resource_uri)
     return resource
+
+
 resource = getResource(archival_object)
+# print(resource)
 
 # Find the parent repo
+
+
 def getRepository(archival_object):
     'Get the repository of a given Archival Object'
     repository_uri = archival_object['repository']['ref']
     repository = aspace.get(repository_uri)
     return repository
+
+
 repository = getRepository(archival_object)
+
+
+def getCollectingUnit(archival_object):
+    repository = getRepository(archival_object)
+    collecting_unit = repository['name']
+
+    return collecting_unit
+
+
+collecting_unit = getCollectingUnit(archival_object)
+
+
+def getMsNo(archival_object):
+    resource = getResource(archival_object)
+    try:
+        id_1 = resource['id_1']
+        id_2 = resource['id_2']
+        ms_no = id_1 + ' ' + id_2
+    except KeyError:
+        ms_no = 'MS' + ' ' + resource['id_0'][:3]
+
+    return ms_no
+
+
+ms_no = getMsNo(archival_object)
+
 
 class AoGeneologyChain(object):
     def __init__(self, archival_object):
@@ -49,7 +84,7 @@ class AoGeneologyChain(object):
         #     resource = getResource(archival_object)
         #     aoGeneologyChain.append(resource)
         #     return aoGeneologyChain
-        # 
+        #
         # aoGeneologyChain = []
         # for i in range(100):
         #     aoGeneologyChain.append(archival_object)
@@ -96,8 +131,8 @@ class AoGeneologyChain(object):
         manner, i.e. stop at the first instance. If nothing is found, return an
         empty list.
         """
-        mylist = [] # Start a running list
-        
+        mylist = []  # Start a running list
+
         # If the field exists in the initial decendant object stop there
         mylist.extend(self.dereferenceRefs(self.newGeneologyChain['object'], mytype))
         if mylist:
@@ -109,7 +144,7 @@ class AoGeneologyChain(object):
             mylist.extend(self.dereferenceRefs(archival_object, mytype))
             if mylist:
                 return mylist
-        
+
         # If all else fails, try to find it in the Resource Record
         mylist.extend(self.dereferenceRefs(self.newGeneologyChain['resource'], mytype))
         return mylist
@@ -120,8 +155,8 @@ class AoGeneologyChain(object):
         empty list.
         """
 
-        mylist = [] # Start a running list
-        
+        mylist = []  # Start a running list
+
         def findAgentsByType(subtypeFieldName, subtype):
             myagents = []
             for item in mylist:
@@ -150,7 +185,7 @@ class AoGeneologyChain(object):
                 myagents = findAgentsByType(subtypeFieldName, subtype)
                 if myagents:
                     return myagents
-        
+
         # If all else fails, try to find it in the Resource Record
         mylist.extend(self.dereferenceRefs(self.newGeneologyChain['resource'], mytype))
         # Run through the list to see if there are any of the desired subtype
@@ -177,9 +212,9 @@ class AoGeneologyChain(object):
         agents['creators'] = []
         agents['donors'] = []
         agents['subjects'] = []
-        agents['creators'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName = 'linked_agent_roles', subtype = 'creator')
-        agents['donors'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName = 'linked_agent_roles', subtype = 'source')
-        agents['subjects'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName = 'linked_agent_roles', subtype = 'subject')
+        agents['creators'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName='linked_agent_roles', subtype='creator')
+        agents['donors'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName='linked_agent_roles', subtype='source')
+        agents['subjects'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName='linked_agent_roles', subtype='subject')
 #        pprint.pprint(agents)
 
         # for agent in agentsAnyType:
@@ -215,14 +250,17 @@ class AoGeneologyChain(object):
             notes[noteType] = self.getNotesByType(noteType)
         return notes
 
+
 mychain = AoGeneologyChain(archival_object)
 
 
 # Traverse all parent AOs and the Resource Record and get their subjects
 subjects = mychain.getSubjectsInherited()
 agents = mychain.getAgentsInherited()
+
+
 # Debug
-#pprint.pprint(agents)
+# pprint.pprint(agents)
 #import pdb; pdb.set_trace()
 
 # Get genre data
@@ -231,7 +269,7 @@ agents = mychain.getAgentsInherited()
 #allNotes = mychain.getNotes()
 # notesToPublish = dict()
 # notesToPublish['accessrestrict'] = []
-# 
+#
 # try:
 #     notesToPublish['accessrestrict'].append(allNotes['accessrestrict'][0])
 #     notesToPublish['accessrestrict'].append(allNotes['accessrestrict'][-1])
@@ -240,14 +278,14 @@ agents = mychain.getAgentsInherited()
 
 
 # Compile all the data into a big structure for jinja
-data = { 'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents }
+data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no}
 
 # Set up jinja loader and template objects
-templateLoader = jinja2.FileSystemLoader( searchpath="." )
-templateEnv = jinja2.Environment( loader=templateLoader )
+templateLoader = jinja2.FileSystemLoader(searchpath=".")
+templateEnv = jinja2.Environment(loader=templateLoader)
 
 # Merge the template and data
-template = templateEnv.get_template( 'compass-mods-template.xml' )
-print(template.render( data ))
+template = templateEnv.get_template('compass-mods-template.xml')
+print(template.render(data))
 
 # Write the file?

@@ -2,7 +2,35 @@ from archivesspace import archivesspace
 import jinja2
 import pprint
 from utilities import *
-aspace = archivesspace.ArchivesSpace('http', 'archivesspace-test.smith.edu', '9999', 'cmarshall', 'aspace1')
+import argparse
+import configparser
+
+CONFIGFILE = "archivesspace.cfg"
+
+argparser = argparse.ArgumentParser()
+argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
+cliArguments = argparser.parse_args()
+
+configData = configparser.ConfigParser()
+
+try:
+    configData.read_file(open(CONFIGFILE), source=CONFIGFILE)
+except FileNotFoundError:
+    print('Problem reading configuration file %s. Configuration file required. Please copy archivesspace-example.cfg to %s and edit.' % (CONFIGFILE, CONFIGFILE))
+    exit(1)
+
+try:
+    config = configData[cliArguments.SERVERCFG]
+except KeyError:
+    print("'%s' section not present in configuration file %s" % (cliArguments.SERVERCFG, CONFIGFILE))
+    exit(1)
+
+try:
+    aspace = archivesspace.ArchivesSpace(config['protocol'], config['hostname'], config['port'], config['username'], config['password'])
+except KeyError as e:
+    print("Missing configuration option %s" % e)
+    exit(1)
+
 aspace.connect()
 
 """

@@ -5,29 +5,67 @@
       xmlns:mods="http://www.loc.gov/mods/v3"
       xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd">
 
+<!-- Title -->
 <titleInfo>
-  <title>{{ archival_object.title }}</title>
+  <title>{{archival_object.title.rstrip()}}</title>
 </titleInfo>
 
+<!-- Date -->
+{%- for item in archival_object.dates %}
+<originInfo>
+  {%- if item.expression %}
+  <dateCreated keyDate="yes">{{item.expression}}</dateCreated>
+  {%- endif %}
+  {%- if item.begin %}
+  <dateValid encoding="iso8601" point="start">{{item.begin}}</dateValid>
+  {%- endif %}
+  {%- if item.end %}
+  <dateValid encoding="iso8601" point="end">{{item.end}}</dateValid>
+  {%- endif %}
+</originInfo>
+{%- endfor %}
+
+<!-- Extent -->
+{%- if archival_object.extents %}
+{%- for item in archival_object.extents %}
+<physicalDescription>
+  <extent>{{item.number}} {{item.extent_type}}</extent>
+  <extent>{{item.container_summary}}</extent>
+</physicalDescription>
+{%- endfor %}
+{%- endif %}
+
 <!-- Subjects -->
-{% if subjects %}
-{% for subject in subjects %}
-<subject{% if subject.authority %} authority="{{ subject.authority }}"{% endif %}{% if subject.authority_id %} valueURI="{{ subject.authority_id }}"{% endif %}>
-  <topic>{{ subject.title }}</topic>
+{%- if subjects %}
+{%- for subject in subjects %}
+<subject{% if subject.authority %} authority="{{subject.authority}}"{% endif %}{% if subject.authority_id %} valueURI="{{subject.authority_id}}"{% endif %}>
+  {%- if subject.terms %}
+    {%- for term in subject.terms %}
+      {%- if term.term_type == 'genre_form' %}
+        <genre>{{subject.title}}</genre>
+      {%- elif term.term_type == 'geographic' %}
+        <geographic>{{subject.title}}</geographic>
+      {%- else %}
+        <topic>{{subject.title}}</topic>
+      {%- endif %}
+    {%- endfor %}
+  {%- endif %}
 </subject>
-{% endfor %}
-{% endif %}
+{%- endfor %}
+{%- endif %}
+
 <!-- Subjects from agents -->
-{% if agents.subjects %}
-{% for agent in agents.subjects %}
-<subject{% if agent.display_name.source %} authority="{{ agent.display_name.source }}"{% endif %} {% if agent.display_name.authority_id %} valueURI="{{ agent.display_name.authority_id }}" {% endif %}>
-  <topic>{{ agent.title }}</topic>
+{%- if agents.subjects %}
+{%- for agent in agents.subjects %}
+<subject{%- if agent.display_name.source %} authority="{{agent.display_name.source}}"{%- endif %} {%- if agent.display_name.authority_id %} valueURI="{{agent.display_name.authority_id}}" {%- endif %}>
+  <topic>{{agent.title}}</topic>
 </subject>
-{% endfor %}
-{% endif %}
+{%- endfor %}
+{%- endif %}
+
 <!-- Agents as creators or donors -->
-{% if agents.creators %}
-{% for agent in agents.creators %}
+{%- if agents.creators %}
+{%- for agent in agents.creators %}
 <name>
   <role>
     <roleTerm type="text" authority="marcrelator">creator</roleTerm>
@@ -35,10 +73,10 @@
   </role>
   <namePart>{{agent.title}}</namePart>
 </name>
-{% endfor %}
-{% endif %}
-{% if agents.donors %}
-{% for agent in agents.donors %}
+{%- endfor %}
+{%- endif %}
+{%- if agents.donors %}
+{%- for agent in agents.donors %}
 <name>
   <role>
     <roleTerm type="text" authority="marcrelator">donor</roleTerm>
@@ -46,15 +84,59 @@
   </role>
   <namePart>{{agent.title}}</namePart>
 </name>
-{% endfor %}
-{% endif %}
+{%- endfor %}
+{%- endif %}
 
+<!-- Language of materials -->
+{%- if resource.language == 'eng' %}
+<language>
+  <languageTerm>English</languageTerm>
+</language>
+{%- else %}
+<language>
+  <languageTerm>{{resource.language}}</languageTerm>
+</language>
+{%- endif %}
 
+<!-- Scope and content -->
+<abstract type="description">Conference proceedings, minutes and reports from the YWCA of the U.S.A predecessor organization, the American Committee. The proceedings and reports reflect the name of the organization at the time of creation as it went through organizational changes. Included are issues of the "Evangel," a publication issued by the International Committee of Young Women's Christian Associations.</abstract>
+
+<!-- Conditions governing use -->
+<accessCondition type="restriction on access" displayLabel="Access">The records are open to research according to the regulations of the Sophia Smith Collection without any additional restrictions.</accessCondition>
+
+<accessCondition type="use and reproduction" displayLabel="Use and Reproduction">The YWCA of the USA retains copyright ownership of the records, but has authorized the Sophia Smith Collection to grant permission to publish reproductions or quotations from the records on its behalf. Copyright to materials authored by persons other than YWCA staff may be owned by those individuals or their heirs or assigns. It is the responsibility of the researcher to identify and satisfy the holders of all copyrights for permission to publish reproductions or quotations beyond &quot;fair use.&quot;</accessCondition>
+
+<!-- Shelf location -->
+<location><shelfLocator>{{container}}</shelfLocator></location>
+
+<!-- Digital object ID -->
+<identifier type="local">{{digital_object.digital_object_id}}</identifier>
+
+<!-- Archival object ID -->
+<identifier type="asrefid">{{archival_object.ref_id}}</identifier>
+
+<!-- Persistent ID of Conditions governing use -->
+<accessCondition type="copyright" displayLabel="Copyright Statement" xlink:href="http://rightsstatements.org/page/InC/1.0/?language=en">In copyright</accessCondition>
+
+<!-- Resource title -->
+<relatedItem type="host" displayLabel="Collection" >
+  <titleInfo>
+    <title>{{resource.title}}</title>
+  </titleInfo>
+  <identfier>{{ms_no}}</identfier>
+</relatedItem>
+
+<!-- Parent institution -->
 <location>
-  <physicalLocation>{{ repository.parent_institution_name }}</physicalLocation>
+  <physicalLocation>{{repository.parent_institution_name}}</physicalLocation>
 </location>
 
+<!-- Repository name -->
+<name role="unit" authority="marcrelator">
+  <namePart>{{collecting_unit}}</namePart>
+</name>
 
-<note type="preferred citation" displayLabel="Preferred Citation">{{ archival_object.title }}, {{ collecting_unit }}, {{ ms_no }}, {{ repository.parent_institution_name }}, Northampton, Massachusetts.</note>
+<!-- Preferred Citation -->
+<note type="preferred citation" displayLabel="Preferred Citation">{{archival_object.title.rstrip()}}, {{collecting_unit}}, {{ms_no}}, {{repository.parent_institution_name}}, Northampton, Massachusetts.</note>
 
 </mods>

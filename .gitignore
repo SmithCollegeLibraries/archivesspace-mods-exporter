@@ -1,6 +1,7 @@
 # Project specific
 /archivesspace
 *.log
+archivesspace.cfg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

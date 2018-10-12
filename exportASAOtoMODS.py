@@ -2,7 +2,16 @@ from archivesspace import archivesspace
 import jinja2
 import pprint
 from utilities import *
-aspace = archivesspace.ArchivesSpace('http', 'archivesspace-test.smith.edu', '9999', 'cmarshall', 'aspace1')
+import argparse
+
+CONFIGFILE = "archivesspace.cfg"
+
+argparser = argparse.ArgumentParser()
+argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
+cliArguments = argparser.parse_args()
+
+aspace = archivesspace.ArchivesSpace()
+aspace.setServerCfg(CONFIGFILE, section=cliArguments.SERVERCFG)
 aspace.connect()
 
 """

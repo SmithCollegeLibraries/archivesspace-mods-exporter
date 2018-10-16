@@ -38,15 +38,15 @@
 <!-- Subjects -->
 {%- if subjects %}
 {%- for subject in subjects %}
-<subject{% if subject.authority %} authority="{{subject.authority}}"{% endif %}{% if subject.authority_id %} valueURI="{{subject.authority_id}}"{% endif %}>
+<subject{% if subject.source %} authority="{{subject.source}}"{% endif %}{% if subject.authority_id %} valueURI="{{subject.authority_id}}"{% endif %}>
   {%- if subject.terms %}
     {%- for term in subject.terms %}
       {%- if term.term_type == 'genre_form' %}
-        <genre>{{subject.title}}</genre>
+        <genre>{{term.term.rstrip()}}</genre>
       {%- elif term.term_type == 'geographic' %}
-        <geographic>{{subject.title}}</geographic>
+        <geographic>{{term.term.rstrip()}}</geographic>
       {%- else %}
-        <topic>{{subject.title}}</topic>
+        <topic>{{term.term.rstrip()}}</topic>
       {%- endif %}
     {%- endfor %}
   {%- endif %}
@@ -110,7 +110,9 @@
 <location><shelfLocator>{{container}}</shelfLocator></location>
 
 <!-- Digital object ID -->
+{%- if do_id %}
 <identifier type="local">{{digital_object.digital_object_id}}</identifier>
+{%- endif %}
 
 <!-- Archival object ID -->
 <identifier type="asrefid">{{archival_object.ref_id}}</identifier>
@@ -119,7 +121,7 @@
 <accessCondition type="copyright" displayLabel="Copyright Statement" xlink:href="http://rightsstatements.org/page/InC/1.0/?language=en">In copyright</accessCondition>
 
 <!-- Resource title -->
-<relatedItem type="host" displayLabel="Collection" >
+<relatedItem type="host" displayLabel="Collection">
   <titleInfo>
     <title>{{resource.title}}</title>
   </titleInfo>

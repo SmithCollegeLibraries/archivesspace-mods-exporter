@@ -22,7 +22,7 @@ Concepts:
 
 # Geneology Chain
 
-# Constelation
+# Constellation
 
 """
 
@@ -38,50 +38,38 @@ NOTETYPESURI = '/config/enumerations/45'
 
 print("*********")  # 162
 
-digital_object = None
+# digital_object = aspace.get("/repositories/2/digital_objects/162")
+# print(digital_object)
 # '/repositories/2/digital_objects/162'
-archival_object = aspace.get('/repositories/2/archivaL_objects/104472')
-print(archival_object)
+# archival_object = aspace.get('/repositories/2/archival_objects/104115')
+# print(archival_object)
 
+digital_object = "/repositories/2/digital_objects/189"
+archival_object = None
+# '/repositories/2/archival_objects/104807'
 
-# if digital_object != None:
-#     digital_object = aspace.get(digital_object)
+if digital_object != None:
+    digital_object = aspace.get(digital_object)
 
-#     'Get the Archival Object record from a given Digital Object'
-#     try:
-#         archival_object_uri = digital_object['linked_instances'][0]['ref']
-#         archival_object = aspace.get(archival_object_uri)
-#     except KeyError:
-#         pass
+    'Get the Archival Object record from the given Digital Object'
+    try:
+        archival_object_uri = digital_object['linked_instances'][0]['ref']
+        archival_object = aspace.get(archival_object_uri)
+    except KeyError:
+        pass
 
-#     #     return archival_object
+elif archival_object != None:
+    archival_object = aspace.get(archival_object)
 
-#     # archival_object = getArchivalObject(digital_object)
+else:
+    pass
 
-# elif archival_object != None:
-#     archival_object = aspace.get(archival_object)
-
-# else:
-#     pass
-
-
-# def getArchivalObject(digital_object):
-#     'Get the Archival Object record from a given Digital Object'
-#     try:
-#         archival_object_uri = digital_object['linked_instances'][0]['ref']
-#         archival_object = aspace.get(archival_object_uri)
-#     except KeyError:
-#         pass
-
-#     return archival_object
-
-
-# archival_object = getArchivalObject(digital_object)
-# print(pprint.pformat(archival_object))
+# print(archival_object)
 
 
 def getShelfLocation(archival_object):
     'Get the Shelf Location of a given Archival Object'
+    top_container_title = ""
     try:
         top_container_uri = archival_object['instances'][0]['sub_container']['top_container']['ref']
         top_container = aspace.get(top_container_uri)
@@ -324,16 +312,10 @@ mychain = AoGeneologyChain(archival_object)
 
 
 # Traverse all parent AOs and the Resource Record and get their subjects
-subjects = mychain.getSubjectsInherited()
+subjects = mychain.getSubjectsInherited()  # What if I replace this with subject_lst???? Or create another variable???
+# print([subject.keys() for subject in subjects])
 
-# subject_lst = [subject['terms'] for subject in subjects]
-
-# for subject in subject_lst:
-#     print("Contains", len(subject), "term(s)")
-#     for sub in subject:
-#         print(sub["term"])
-#     print(subject)
-#     print("___________")
+# print(pprint.pformat(subjects))
 
 
 agents = mychain.getAgentsInherited()

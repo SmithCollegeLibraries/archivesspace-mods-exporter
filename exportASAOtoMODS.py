@@ -22,7 +22,7 @@ Concepts:
 
 # Geneology Chain
 
-# Constelation
+# Constellation
 
 """
 
@@ -30,10 +30,57 @@ NOTETYPESURI = '/config/enumerations/45'
 
 # Retrieve the DO
 # Find the DO's parent AO
-# archival_object = aspace.get('/repositories/2/archival_objects/105443')
-archival_object = aspace.get('/repositories/2/archival_objects/159445')
+# archival_object = aspace.get('/repositories/2/archival_objects/105443') #159445
+# archival_object = aspace.get('/repositories/2/archival_objects/159445')
+# print(pprint.pformat(archival_object.keys()))
 # Find the AO's parent resource
 # 845
+
+print("*********")  # 162
+
+# digital_object = aspace.get("/repositories/2/digital_objects/162")
+# print(digital_object)
+# '/repositories/2/digital_objects/162'
+# archival_object = aspace.get('/repositories/2/archival_objects/104115')
+# print(archival_object)
+
+digital_object = "/repositories/2/digital_objects/189"
+archival_object = None
+# '/repositories/2/archival_objects/104807'
+
+if digital_object != None:
+    digital_object = aspace.get(digital_object)
+
+    'Get the Archival Object record from the given Digital Object'
+    try:
+        archival_object_uri = digital_object['linked_instances'][0]['ref']
+        archival_object = aspace.get(archival_object_uri)
+    except KeyError:
+        pass
+
+elif archival_object != None:
+    archival_object = aspace.get(archival_object)
+
+else:
+    pass
+
+# print(archival_object)
+
+
+def getShelfLocation(archival_object):
+    'Get the Shelf Location of a given Archival Object'
+    top_container_title = ""
+    try:
+        top_container_uri = archival_object['instances'][0]['sub_container']['top_container']['ref']
+        top_container = aspace.get(top_container_uri)
+        top_container_title = top_container['display_string']
+    except IndexError:
+        pass
+
+    return top_container_title
+
+
+container = getShelfLocation(archival_object)
 
 
 def getResource(archival_object):
@@ -44,11 +91,9 @@ def getResource(archival_object):
 
 
 resource = getResource(archival_object)
-# print(resource)
+
 
 # Find the parent repo
-
-
 def getRepository(archival_object):
     'Get the repository of a given Archival Object'
     repository_uri = archival_object['repository']['ref']
@@ -60,6 +105,7 @@ repository = getRepository(archival_object)
 
 
 def getCollectingUnit(archival_object):
+    'Get the collecting unit of a given Archival Object'
     repository = getRepository(archival_object)
     collecting_unit = repository['name']
 
@@ -70,6 +116,7 @@ collecting_unit = getCollectingUnit(archival_object)
 
 
 def getMsNo(archival_object):
+    'Get the MS number of a given Archival Object'
     resource = getResource(archival_object)
     try:
         id_1 = resource['id_1']
@@ -133,6 +180,7 @@ class AoGeneologyChain(object):
                 elements.append(elementData)
         except KeyError:
             pass
+        # print(elements)
         return elements
 
     def lazyFind(self, mytype):
@@ -264,18 +312,23 @@ mychain = AoGeneologyChain(archival_object)
 
 
 # Traverse all parent AOs and the Resource Record and get their subjects
-subjects = mychain.getSubjectsInherited()
+subjects = mychain.getSubjectsInherited()  # What if I replace this with subject_lst???? Or create another variable???
+# print([subject.keys() for subject in subjects])
+
+# print(pprint.pformat(subjects))
+
+
 agents = mychain.getAgentsInherited()
 
 
 # Debug
 # pprint.pprint(agents)
-#import pdb; pdb.set_trace()
+# import pdb; pdb.set_trace()
 
 # Get genre data
 # Get agent data
 # Get notes data
-#allNotes = mychain.getNotes()
+# allNotes = mychain.getNotes()
 # notesToPublish = dict()
 # notesToPublish['accessrestrict'] = []
 #
@@ -287,11 +340,12 @@ agents = mychain.getAgentsInherited()
 
 
 # Compile all the data into a big structure for jinja
-data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no}
+data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'container': container}
 
 # Set up jinja loader and template objects
 templateLoader = jinja2.FileSystemLoader(searchpath=".")
 templateEnv = jinja2.Environment(loader=templateLoader)
+
 
 # Merge the template and data
 template = templateEnv.get_template('compass-mods-template.xml')

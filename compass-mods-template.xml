@@ -98,10 +98,14 @@
 </language>
 {%- endif %}
 
+<!-- Note field to be added later <note></note> -->
+
 <!-- Scope and content -->
+<!-- Hard coded for YWCA project. Will have to be made dynamic for future non-YWCA exports -->
 <abstract type="description">Conference proceedings, minutes and reports from the YWCA of the U.S.A predecessor organization, the American Committee. The proceedings and reports reflect the name of the organization at the time of creation as it went through organizational changes. Included are issues of the "Evangel," a publication issued by the International Committee of Young Women's Christian Associations.</abstract>
 
 <!-- Conditions governing use -->
+<!-- Hard coded for YWCA project. Will have to be made dynamic for future exports -->
 <accessCondition type="restriction on access" displayLabel="Access">The records are open to research according to the regulations of the Sophia Smith Collection without any additional restrictions.</accessCondition>
 
 <accessCondition type="use and reproduction" displayLabel="Use and Reproduction">The YWCA of the USA retains copyright ownership of the records, but has authorized the Sophia Smith Collection to grant permission to publish reproductions or quotations from the records on its behalf. Copyright to materials authored by persons other than YWCA staff may be owned by those individuals or their heirs or assigns. It is the responsibility of the researcher to identify and satisfy the holders of all copyrights for permission to publish reproductions or quotations beyond &quot;fair use.&quot;</accessCondition>
@@ -110,14 +114,16 @@
 <location><shelfLocator>{{container}}</shelfLocator></location>
 
 <!-- Digital object ID -->
-{%- if do_id %}
-<identifier type="local">{{digital_object.digital_object_id}}</identifier>
+{%- if digital_object_id|length > 0 %}
+<identifier type="local">{{digital_object_id}}</identifier>
 {%- endif %}
+
 
 <!-- Archival object ID -->
 <identifier type="asrefid">{{archival_object.ref_id}}</identifier>
 
 <!-- Persistent ID of Conditions governing use -->
+<!-- Hard coded for YWCA project. Will have to be made dynamic for future exports -->
 <accessCondition type="copyright" displayLabel="Copyright Statement" xlink:href="http://rightsstatements.org/page/InC/1.0/?language=en">In copyright</accessCondition>
 
 <!-- Resource title -->

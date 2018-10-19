@@ -3,6 +3,7 @@ import jinja2
 import pprint
 from utilities import *
 import argparse
+from record_funcs import *
 
 CONFIGFILE = "archivesspace.cfg"
 
@@ -28,43 +29,68 @@ Concepts:
 
 NOTETYPESURI = '/config/enumerations/45'
 
-# Retrieve the DO
-# Find the DO's parent AO
-# archival_object = aspace.get('/repositories/2/archival_objects/105443') #159445
-# archival_object = aspace.get('/repositories/2/archival_objects/159445')
-# print(pprint.pformat(archival_object.keys()))
-# Find the AO's parent resource
-# 845
+print("*********")
 
-print("*********")  # 162
+' ===== Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records ===== '
 
-# digital_object = aspace.get("/repositories/2/digital_objects/162")
-# print(digital_object)
-# '/repositories/2/digital_objects/162'
-# archival_object = aspace.get('/repositories/2/archival_objects/104115')
-# print(archival_object)
+' Query to retrieve the tree for YWCA of the U.S.A. Photographic Records '
+series_in_resource = getSeries(676)
 
-digital_object = "/repositories/2/digital_objects/189"
-archival_object = None
-# '/repositories/2/archival_objects/104807'
+prins_and_negs = series_in_resource[0]
+slides = series_in_resource[1]
+film_strips = series_in_resource[2]
 
-if digital_object != None:
-    digital_object = aspace.get(digital_object)
+' Retrieving list of record URIs for each record in each series for YWCA of the U.S.A. Photographic Records '
+prins_and_negs_uris = getChildUris(prins_and_negs)
+slides_uris = getChildUris(slides)
+film_strips_uris = getChildUris(film_strips)
 
-    'Get the Archival Object record from the given Digital Object'
+' Combine lists into one '
+ywca_photo_uris = prins_and_negs_uris + slides_uris + film_strips_uris
+
+' Make API call for each record in YWCA of the U.S.A. Photographic Records and add all digital objects URIs to a list '
+do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
+
+
+def getArchivalObject(aspace_uri):
+    'Get either Archival Object Record directly or from a Digital Object, depending on type of object given'
+
     try:
-        archival_object_uri = digital_object['linked_instances'][0]['ref']
-        archival_object = aspace.get(archival_object_uri)
-    except KeyError:
-        pass
+        if 'digital_objects' in aspace_uri:
+            digital_object = aspace.get(aspace_uri)
 
-elif archival_object != None:
-    archival_object = aspace.get(archival_object)
+        try:
+            archival_object_uri = digital_object['linked_instances'][0]['ref']
+            archival_object = aspace.get(archival_object_uri)
+        except KeyError:
+            logging.error("Didn't find as expected")
+            pass
 
-else:
-    pass
+    except:
+        if 'archival_objects' in aspace_uri:
+            archival_object = aspace.get(aspace_uri)
 
-# print(archival_object)
+    return archival_object
+
+
+'Creating list of Archival Object to be passed in template-rendering function'
+archival_objects = []
+
+for do in do_photo_uris:
+    archival_object = getArchivalObject(do)
+    archival_objects.append(archival_object)
+
+
+def getDigitalObjectId(archival_object):
+    'Get the Digital Object ID from a Digital Object resource_uri'
+
+    if 'digital_object_id' in archival_object.keys():
+        digital_object_id = archival_object['digital_object_id']
+
+    else:
+        digital_object_id = ""
+
+    return digital_object_id
 
 
 def getShelfLocation(archival_object):
@@ -74,7 +100,7 @@ def getShelfLocation(archival_object):
         top_container_uri = archival_object['instances'][0]['sub_container']['top_container']['ref']
         top_container = aspace.get(top_container_uri)
         top_container_title = top_container['display_string']
-    except IndexError:
+    except KeyError:
         pass
 
     return top_container_title
@@ -93,7 +119,6 @@ def getResource(archival_object):
 resource = getResource(archival_object)
 
 
-# Find the parent repo
 def getRepository(archival_object):
     'Get the repository of a given Archival Object'
     repository_uri = archival_object['repository']['ref']
@@ -312,11 +337,7 @@ mychain = AoGeneologyChain(archival_object)
 
 
 # Traverse all parent AOs and the Resource Record and get their subjects
-subjects = mychain.getSubjectsInherited()  # What if I replace this with subject_lst???? Or create another variable???
-# print([subject.keys() for subject in subjects])
-
-# print(pprint.pformat(subjects))
-
+subjects = mychain.getSubjectsInherited()
 
 agents = mychain.getAgentsInherited()
 
@@ -338,17 +359,30 @@ agents = mychain.getAgentsInherited()
 # except KeyError:
 #     pass
 
+def renderRecord(archival_object):
+    'Call all the functions'
+    digital_object_id = getDigitalObjectId(archival_object)
+    container = getShelfLocation(archival_object)
+    resource = getResource(archival_object)
+    collecting_unit = getCollectingUnit(archival_object)
+    ms_no = getMsNo(archival_object)
+    mychain = AoGeneologyChain(archival_object)
+    subjects = mychain.getSubjectsInherited()
+    agents = mychain.getAgentsInherited()
 
-# Compile all the data into a big structure for jinja
-data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'container': container}
+    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object_id': digital_object_id, 'container': container}
 
-# Set up jinja loader and template objects
-templateLoader = jinja2.FileSystemLoader(searchpath=".")
-templateEnv = jinja2.Environment(loader=templateLoader)
+    templateLoader = jinja2.FileSystemLoader(searchpath=".")
+    templateEnv = jinja2.Environment(loader=templateLoader)
+
+    # Merge the template and data
+    template = templateEnv.get_template('compass-mods-template.xml')
+
+    return template.render(data)
 
 
-# Merge the template and data
-template = templateEnv.get_template('compass-mods-template.xml')
-print(template.render(data))
+for archival_object in archival_objects:
+    record = renderRecord(archival_object)
+    print(record)
 
 # Write the file?

@@ -3,7 +3,10 @@ import jinja2
 import pprint
 from utilities import *
 import argparse
+import glob
+import os.path
 from record_funcs import *
+import logging
 
 CONFIGFILE = "archivesspace.cfg"
 
@@ -32,21 +35,7 @@ NOTETYPESURI = '/config/enumerations/45'
 print("*********")
 
 ' ===== Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records ===== '
-
-' Query to retrieve the tree for YWCA of the U.S.A. Photographic Records '
-series_in_resource = getSeries(676)
-
-prins_and_negs = series_in_resource[0]
-slides = series_in_resource[1]
-film_strips = series_in_resource[2]
-
-' Retrieving list of record URIs for each record in each series for YWCA of the U.S.A. Photographic Records '
-prins_and_negs_uris = getChildUris(prins_and_negs)
-slides_uris = getChildUris(slides)
-film_strips_uris = getChildUris(film_strips)
-
-' Combine lists into one '
-ywca_photo_uris = prins_and_negs_uris + slides_uris + film_strips_uris
+ywca_photo_uris = getAllResourceUris(676)
 
 ' Make API call for each record in YWCA of the U.S.A. Photographic Records and add all digital objects URIs to a list '
 do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
@@ -73,7 +62,7 @@ def getArchivalObject(aspace_uri):
     return archival_object
 
 
-'Creating list of Archival Object to be passed in template-rendering function'
+'Creating list of Archival Objects to be passed in template-rendering function'
 archival_objects = []
 
 for do in do_photo_uris:
@@ -82,10 +71,17 @@ for do in do_photo_uris:
 
 
 def getDigitalObjectId(archival_object):
-    'Get the Digital Object ID from a Digital Object resource_uri'
+    'Get the Digital Object ID from an Archival Object'
 
-    if 'digital_object_id' in archival_object.keys():
-        digital_object_id = archival_object['digital_object_id']
+    if len(archival_object['instances']) > 1:
+        try:
+            do_uri = archival_object['instances'][1]['digital_object']['ref']
+            do = aspace.get(do_uri)
+            digital_object_id = do['digital_object_id']
+        except:
+            do_uri = archival_object['instances'][2]['digital_object']['ref']
+            do = aspace.get(do_uri)
+            digital_object_id = do['digital_object_id']
 
     else:
         digital_object_id = ""
@@ -359,6 +355,7 @@ agents = mychain.getAgentsInherited()
 # except KeyError:
 #     pass
 
+
 def renderRecord(archival_object):
     'Call all the functions'
     digital_object_id = getDigitalObjectId(archival_object)
@@ -376,13 +373,31 @@ def renderRecord(archival_object):
     templateEnv = jinja2.Environment(loader=templateLoader)
 
     # Merge the template and data
+
     template = templateEnv.get_template('compass-mods-template.xml')
 
     return template.render(data)
 
 
+'Writing the files'
+count = 0
 for archival_object in archival_objects:
-    record = renderRecord(archival_object)
-    print(record)
+    count += 1
+    print(count)
+    save_path = '/Users/cmarshall/Desktop/Scripts/Tests/archivesspace-mods-exporter/modsoutput'
 
-# Write the file?
+    xml = renderRecord(archival_object)
+    handle = getDigitalObjectId(archival_object)
+
+    if len(handle) > 0:
+        handle = handle
+        print(handle)
+        filename = os.path.join(save_path, handle + ".xml")
+    else:
+        handle = archival_object["ref_id"]
+        print(handle)
+        filename = os.path.join(save_path, handle + ".xml")
+
+    with open(filename, "w") as fh:
+        logging.info('Writing %s' % filename)
+        fh.write(xml)

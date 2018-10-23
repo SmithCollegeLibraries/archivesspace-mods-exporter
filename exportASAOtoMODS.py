@@ -384,7 +384,7 @@ for archival_object in archival_objects:
 
     xml = renderRecord(archival_object)
     handle = getDigitalObjectId(archival_object)
-    save_path = arg.outputpath
+    save_path = args.outputpath
 
     filename = os.path.join(save_path, handle + ".xml")
 

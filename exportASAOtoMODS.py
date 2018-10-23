@@ -11,6 +11,7 @@ import logging
 CONFIGFILE = "archivesspace.cfg"
 
 argparser = argparse.ArgumentParser()
+argparser.add_argument("outputpath", help="File path for record output")
 argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
 cliArguments = argparser.parse_args()
 
@@ -78,7 +79,7 @@ def getDigitalObjectId(archival_object):
             do_uri = archival_object['instances'][1]['digital_object']['ref']
             do = aspace.get(do_uri)
             digital_object_id = do['digital_object_id']
-        except:
+        except IndexError:
             do_uri = archival_object['instances'][2]['digital_object']['ref']
             do = aspace.get(do_uri)
             digital_object_id = do['digital_object_id']
@@ -373,30 +374,19 @@ def renderRecord(archival_object):
     templateEnv = jinja2.Environment(loader=templateLoader)
 
     # Merge the template and data
-
     template = templateEnv.get_template('compass-mods-template.xml')
 
     return template.render(data)
 
 
 'Writing the files'
-count = 0
 for archival_object in archival_objects:
-    count += 1
-    print(count)
-    save_path = '/Users/cmarshall/Desktop/Scripts/Tests/archivesspace-mods-exporter/modsoutput'
 
     xml = renderRecord(archival_object)
     handle = getDigitalObjectId(archival_object)
+    save_path = arg.outputpath
 
-    if len(handle) > 0:
-        handle = handle
-        print(handle)
-        filename = os.path.join(save_path, handle + ".xml")
-    else:
-        handle = archival_object["ref_id"]
-        print(handle)
-        filename = os.path.join(save_path, handle + ".xml")
+    filename = os.path.join(save_path, handle + ".xml")
 
     with open(filename, "w") as fh:
         logging.info('Writing %s' % filename)

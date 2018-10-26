@@ -11,7 +11,7 @@ import logging
 CONFIGFILE = "archivesspace.cfg"
 
 argparser = argparse.ArgumentParser()
-argparser.add_argument("outputpath", help="File path for record output")
+# argparser.add_argument("outputpath", help="File path for record output.")
 argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
 cliArguments = argparser.parse_args()
 
@@ -35,59 +35,33 @@ NOTETYPESURI = '/config/enumerations/45'
 
 print("*********")
 
-' ===== Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records ===== '
-ywca_photo_uris = getAllResourceUris(676)
+# ' ===== Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records ===== '
+# ywca_photo_uris = getAllResourceUris(676)
 
-' Make API call for each record in YWCA of the U.S.A. Photographic Records and add all digital objects URIs to a list '
-do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
+# ' Make API call for each record in YWCA of the U.S.A. Photographic Records and add all digital objects URIs to a list '
+# do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
 
 
-def getArchivalObject(aspace_uri):
-    'Get either Archival Object Record directly or from a Digital Object, depending on type of object given'
+def getDigitalObject(do_uri):
+    'Get Digital Object from Digital Object URI'
+    digital_object = aspace.get(do_uri)
 
-    try:
-        if 'digital_objects' in aspace_uri:
-            digital_object = aspace.get(aspace_uri)
+    return digital_object
 
-        try:
-            archival_object_uri = digital_object['linked_instances'][0]['ref']
-            archival_object = aspace.get(archival_object_uri)
-        except KeyError:
-            logging.error("Didn't find as expected")
-            pass
+# do_id = digital_object['digital_object_id']
+# do_uri = digital_object['uri']
 
-    except:
-        if 'archival_objects' in aspace_uri:
-            archival_object = aspace.get(aspace_uri)
+
+def getArchivalObject(do_uri):
+    'Get an Archival Object Record from a Digital Object URI'
+    digital_object = getDigitalObject(do_uri)
+    archival_object_uri = digital_object['linked_instances'][0]['ref']
+    archival_object = aspace.get(archival_object_uri)
 
     return archival_object
 
-
-'Creating list of Archival Objects to be passed in template-rendering function'
-archival_objects = []
-
-for do in do_photo_uris:
-    archival_object = getArchivalObject(do)
-    archival_objects.append(archival_object)
-
-
-def getDigitalObjectId(archival_object):
-    'Get the Digital Object ID from an Archival Object'
-
-    if len(archival_object['instances']) > 1:
-        try:
-            do_uri = archival_object['instances'][1]['digital_object']['ref']
-            do = aspace.get(do_uri)
-            digital_object_id = do['digital_object_id']
-        except IndexError:
-            do_uri = archival_object['instances'][2]['digital_object']['ref']
-            do = aspace.get(do_uri)
-            digital_object_id = do['digital_object_id']
-
-    else:
-        digital_object_id = ""
-
-    return digital_object_id
+# ao_id = archival_object['ref_id']
+# ao_uri = archival_object['uri']
 
 
 def getShelfLocation(archival_object):
@@ -103,7 +77,16 @@ def getShelfLocation(archival_object):
     return top_container_title
 
 
-container = getShelfLocation(archival_object)
+def getFolder(archival_object):
+    folder = ""
+    try:
+        fol = archival_object['instances'][0]['sub_container']['type_2'].capitalize()
+        num = archival_object['instances'][0]['sub_container']['indicator_2']
+        folder = fol + " " + num
+    except KeyError:
+        pass
+
+    return folder
 
 
 def getResource(archival_object):
@@ -113,17 +96,11 @@ def getResource(archival_object):
     return resource
 
 
-resource = getResource(archival_object)
-
-
 def getRepository(archival_object):
     'Get the repository of a given Archival Object'
     repository_uri = archival_object['repository']['ref']
     repository = aspace.get(repository_uri)
     return repository
-
-
-repository = getRepository(archival_object)
 
 
 def getCollectingUnit(archival_object):
@@ -132,9 +109,6 @@ def getCollectingUnit(archival_object):
     collecting_unit = repository['name']
 
     return collecting_unit
-
-
-collecting_unit = getCollectingUnit(archival_object)
 
 
 def getMsNo(archival_object):
@@ -148,9 +122,6 @@ def getMsNo(archival_object):
         ms_no = 'MS' + ' ' + resource['id_0'][:3]
 
     return ms_no
-
-
-ms_no = getMsNo(archival_object)
 
 
 class AoGeneologyChain(object):
@@ -285,6 +256,7 @@ class AoGeneologyChain(object):
         independently by type: creator, source, subject.
         """
         # agentsAnyType = self.lazyFind('linked_agents')
+        mychain = AoGeneologyChain(archival_object)
 
         agents = {}
         # Sort agents out into their roles for different uses in the MARC record
@@ -330,13 +302,15 @@ class AoGeneologyChain(object):
         return notes
 
 
-mychain = AoGeneologyChain(archival_object)
+# mychain = AoGeneologyChain(archival_object)
+# notes = getNotesByType(mychain, userestrict)
 
+# print(notes)
 
 # Traverse all parent AOs and the Resource Record and get their subjects
-subjects = mychain.getSubjectsInherited()
+# subjects = mychain.getSubjectsInherited()
 
-agents = mychain.getAgentsInherited()
+# agents = mychain.getAgentsInherited()
 
 
 # Debug
@@ -357,18 +331,21 @@ agents = mychain.getAgentsInherited()
 #     pass
 
 
-def renderRecord(archival_object):
+def renderRecord(do_uri):
     'Call all the functions'
-    digital_object_id = getDigitalObjectId(archival_object)
+    digital_object = getDigitalObject(do_uri)
+    archival_object = getArchivalObject(do_uri)
     container = getShelfLocation(archival_object)
+    folder = getFolder(archival_object)
     resource = getResource(archival_object)
     collecting_unit = getCollectingUnit(archival_object)
     ms_no = getMsNo(archival_object)
+    repository = getRepository(archival_object)
     mychain = AoGeneologyChain(archival_object)
     subjects = mychain.getSubjectsInherited()
     agents = mychain.getAgentsInherited()
 
-    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object_id': digital_object_id, 'container': container}
+    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container}
 
     templateLoader = jinja2.FileSystemLoader(searchpath=".")
     templateEnv = jinja2.Environment(loader=templateLoader)
@@ -379,15 +356,29 @@ def renderRecord(archival_object):
     return template.render(data)
 
 
-'Writing the files'
-for archival_object in archival_objects:
+'Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records'
+ywca_photo_uris = getAllResourceUris(676)
 
-    xml = renderRecord(archival_object)
-    handle = getDigitalObjectId(archival_object)
-    save_path = args.outputpath
+'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all digital objects URIs to a list'
+do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
 
-    filename = os.path.join(save_path, handle + ".xml")
 
-    with open(filename, "w") as fh:
-        logging.info('Writing %s' % filename)
-        fh.write(xml)
+for do_uri in do_photo_uris:
+    record = renderRecord(do_uri)
+    print(record)
+
+# 'Writing the files'
+# count = 0
+# for archival_object in archival_objects:
+#     count += 1
+#     print(count)
+
+#     xml = renderRecord(archival_object)
+#     # do = getDigitalObject(archival_object)
+#     handle = getDigitalObjectId(archival_object)
+#     save_path = cliArguments.outputpath
+#     filename = os.path.join(save_path, handle + ".xml")
+
+#     with open(filename, "w") as fh:
+#         logging.info('Writing %s' % filename)
+#         fh.write(xml)

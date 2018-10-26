@@ -25,6 +25,12 @@
 </originInfo>
 {%- endfor %}
 
+<!-- Repository name -->
+<name>
+  <namePart>{{collecting_unit}}</namePart>
+  <role><roleTerm authority="local" type="text">Unit</roleTerm></role>
+</name>
+
 <!-- Extent -->
 {%- if archival_object.extents %}
 {%- for item in archival_object.extents %}
@@ -87,6 +93,13 @@
 {%- endfor %}
 {%- endif %}
 
+<!-- Arrangement (from resource.notes) -->
+<abstract type="arrangement">
+  <list type="simple">
+    <item></item>
+  </list>
+</abstract>
+
 <!-- Language of materials -->
 {%- if resource.language == 'eng' %}
 <language>
@@ -98,33 +111,40 @@
 </language>
 {%- endif %}
 
-<!-- Note field to be added later <note></note> -->
-
 <!-- Scope and content -->
 <!-- Hard coded for YWCA project. Will have to be made dynamic for future non-YWCA exports -->
 <abstract type="description">Conference proceedings, minutes and reports from the YWCA of the U.S.A predecessor organization, the American Committee. The proceedings and reports reflect the name of the organization at the time of creation as it went through organizational changes. Included are issues of the "Evangel," a publication issued by the International Committee of Young Women's Christian Associations.</abstract>
 
 <!-- Conditions governing use -->
 <!-- Hard coded for YWCA project. Will have to be made dynamic for future exports -->
-<accessCondition type="restriction on access" displayLabel="Access">The records are open to research according to the regulations of the Sophia Smith Collection without any additional restrictions.</accessCondition>
+ <accessCondition type="use and reproduction" displayLabel="Collection Use and Reproduction"></accessCondition>
 
-<accessCondition type="use and reproduction" displayLabel="Use and Reproduction">The YWCA of the USA retains copyright ownership of the records, but has authorized the Sophia Smith Collection to grant permission to publish reproductions or quotations from the records on its behalf. Copyright to materials authored by persons other than YWCA staff may be owned by those individuals or their heirs or assigns. It is the responsibility of the researcher to identify and satisfy the holders of all copyrights for permission to publish reproductions or quotations beyond &quot;fair use.&quot;</accessCondition>
+<accessCondition type="use and reproduction" displayLabel="Object Use and Reproduction"></accessCondition>
+
+<accessCondition type="restriction on access" displayLabel="Collection Access"></accessCondition>
+
+<!--<accessCondition type="restriction on access" displayLabel="Access">The records are open to research according to the regulations of the Sophia Smith Collection without any additional restrictions.</accessCondition>
+
+<accessCondition type="use and reproduction" displayLabel="Use and Reproduction">The YWCA of the USA retains copyright ownership of the records, but has authorized the Sophia Smith Collection to grant permission to publish reproductions or quotations from the records on its behalf. Copyright to materials authored by persons other than YWCA staff may be owned by those individuals or their heirs or assigns. It is the responsibility of the researcher to identify and satisfy the holders of all copyrights for permission to publish reproductions or quotations beyond &quot;fair use.&quot;</accessCondition>-->
 
 <!-- Shelf location -->
-<location><shelfLocator>{{container}}</shelfLocator></location>
+<location><shelfLocator>{{container}} {%- if folder|len > 1 %}, {{folder}} {%- endif %}</shelfLocator></location>
 
 <!-- Digital object ID -->
-{%- if digital_object_id|length > 0 %}
-<identifier type="local">{{digital_object_id}}</identifier>
-{%- endif %}
+<identifier type="local">{{digital_object.digital_object_id}}</identifier>
 
+<!-- Digital object URI -->
+<identifier type="asdouri">{{digital_object.uri}}</identifier>
 
 <!-- Archival object ID -->
 <identifier type="asrefid">{{archival_object.ref_id}}</identifier>
 
+<!-- Archival object URI -->
+<identifier type="asouri">{{archival_object.uri}}</identifier>
+
 <!-- Persistent ID of Conditions governing use -->
 <!-- Hard coded for YWCA project. Will have to be made dynamic for future exports -->
-<accessCondition type="copyright" displayLabel="Copyright Statement" xlink:href="http://rightsstatements.org/page/InC/1.0/?language=en">In copyright</accessCondition>
+<!-- <accessCondition type="copyright" displayLabel="Copyright Statement" xlink:href="http://rightsstatements.org/page/InC/1.0/?language=en">In copyright</accessCondition> Maybe not necessary? -->
 
 <!-- Resource title -->
 <relatedItem type="host" displayLabel="Collection">
@@ -134,15 +154,13 @@
   <identfier>{{ms_no}}</identfier>
 </relatedItem>
 
+<!-- Finding aid -->
+<relatedItem type="host" displayLabel="Collection"><identifier type="uri" displayLabel="Finding aid">{{resource.ead_location}}</identifier></relatedItem>
+
 <!-- Parent institution -->
 <location>
   <physicalLocation>{{repository.parent_institution_name}}</physicalLocation>
 </location>
-
-<!-- Repository name -->
-<name role="unit" authority="marcrelator">
-  <namePart>{{collecting_unit}}</namePart>
-</name>
 
 <!-- Preferred Citation -->
 <note type="preferred citation" displayLabel="Preferred Citation">{{archival_object.title.rstrip()}}, {{collecting_unit}}, {{ms_no}}, {{repository.parent_institution_name}}, Northampton, Massachusetts.</note>

@@ -11,7 +11,7 @@ import logging
 CONFIGFILE = "archivesspace.cfg"
 
 argparser = argparse.ArgumentParser()
-# argparser.add_argument("outputpath", help="File path for record output.")
+argparser.add_argument("outputpath", help="File path for record output.")
 argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
 cliArguments = argparser.parse_args()
 
@@ -34,12 +34,6 @@ Concepts:
 NOTETYPESURI = '/config/enumerations/45'
 
 print("*********")
-
-# ' ===== Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records ===== '
-# ywca_photo_uris = getAllResourceUris(676)
-
-# ' Make API call for each record in YWCA of the U.S.A. Photographic Records and add all digital objects URIs to a list '
-# do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
 
 
 def getDigitalObject(do_uri):
@@ -122,6 +116,22 @@ def getMsNo(archival_object):
         ms_no = 'MS' + ' ' + resource['id_0'][:3]
 
     return ms_no
+
+
+# ['langmaterial', 'abstract', 'arrangement', 'accessrestrict', 'userestrict', 'prefercite', 'acqinfo', 'processinfo', 'relatedmaterial', 'phystech']
+def getNotesByType(resource, notetype):
+
+    notes = resource['notes']
+    note_tups = []
+    for note in notes:
+        if 'content' in note.keys():
+            tup = (note['type'], note['content'])
+        else:
+            tup = (note['type'], note['subnotes'])
+            note_tups.append(tup)
+    note_dict = dict(note_tups)
+
+    return note_dict[notetype]
 
 
 class AoGeneologyChain(object):
@@ -243,7 +253,7 @@ class AoGeneologyChain(object):
         if myagents:
             return myagents
 
-    def getSubjectsInherited(self):
+    def getSubjectsInherited(self, mychain):
         '''Get subject data from either the current Archival Object, its parent
         Archival Objects, or the Resource Record. 'Lazily' i.e. stop as soon as
         I find subjects as I traverse up the geneology chain.
@@ -251,12 +261,12 @@ class AoGeneologyChain(object):
         subjects = self.lazyFind('subjects')
         return subjects
 
-    def getAgentsInherited(self):
+    def getAgentsInherited(self, mychain):
         """Get agents running up the inheritance chain handling them
         independently by type: creator, source, subject.
         """
         # agentsAnyType = self.lazyFind('linked_agents')
-        mychain = AoGeneologyChain(archival_object)
+        # mychain = AoGeneologyChain(archival_object)
 
         agents = {}
         # Sort agents out into their roles for different uses in the MARC record
@@ -338,14 +348,23 @@ def renderRecord(do_uri):
     container = getShelfLocation(archival_object)
     folder = getFolder(archival_object)
     resource = getResource(archival_object)
+    arrangement = getNotesByType(resource, 'arrangement')
+    arrangement_desc = arrangement[0]['content']
+    arrangement_items = arrangement[1]['items']
+    for note in resource['notes']:
+        if 'abstract' == note['type']:
+            abstract = note
+    # abstract = abstract['content'][0]
+    userestrict = getNotesByType(resource, 'userestrict')
+    accrestrict = getNotesByType(resource, 'accessrestrict')
     collecting_unit = getCollectingUnit(archival_object)
     ms_no = getMsNo(archival_object)
     repository = getRepository(archival_object)
     mychain = AoGeneologyChain(archival_object)
-    subjects = mychain.getSubjectsInherited()
-    agents = mychain.getAgentsInherited()
+    subjects = mychain.getSubjectsInherited(mychain)
+    agents = mychain.getAgentsInherited(mychain)
 
-    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container}
+    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'ar_desc': arrangement_desc, 'ar_items': arrangement_items, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
 
     templateLoader = jinja2.FileSystemLoader(searchpath=".")
     templateEnv = jinja2.Environment(loader=templateLoader)
@@ -356,29 +375,28 @@ def renderRecord(do_uri):
     return template.render(data)
 
 
+' ********************************* '
+' ***** Calling the functions ***** '
+' ********************************* '
+
 'Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records'
 ywca_photo_uris = getAllResourceUris(676)
 
-'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all digital objects URIs to a list'
+'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
 do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
 
-
+'Writing the files'
+count = 0
 for do_uri in do_photo_uris:
-    record = renderRecord(do_uri)
-    print(record)
+    count += 1
+    print(count)
 
-# 'Writing the files'
-# count = 0
-# for archival_object in archival_objects:
-#     count += 1
-#     print(count)
+    xml = renderRecord(do_uri)
+    do = getDigitalObject(do_uri)
+    handle = do['digital_object_id']
+    save_path = cliArguments.outputpath
+    filename = os.path.join(save_path, handle + ".xml")
 
-#     xml = renderRecord(archival_object)
-#     # do = getDigitalObject(archival_object)
-#     handle = getDigitalObjectId(archival_object)
-#     save_path = cliArguments.outputpath
-#     filename = os.path.join(save_path, handle + ".xml")
-
-#     with open(filename, "w") as fh:
-#         logging.info('Writing %s' % filename)
-#         fh.write(xml)
+    with open(filename, "w") as fh:
+        logging.info('Writing %s' % filename)
+        fh.write(xml)

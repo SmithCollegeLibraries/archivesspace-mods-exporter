@@ -11,7 +11,7 @@ import logging
 CONFIGFILE = "archivesspace.cfg"
 
 argparser = argparse.ArgumentParser()
-# argparser.add_argument("outputpath", help="File path for record output")
+argparser.add_argument("outputpath", help="File path for record output")
 argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
 cliArguments = argparser.parse_args()
 
@@ -21,80 +21,104 @@ aspace.connect()
 
 ##-------------------------------- ##
 
-test = aspace.get('/repositories/2/archival_objects/104935')
+test = aspace.get('/repositories/2/archival_objects/104498')
 
-def getScopeAndContent(archival_object):
-    if 'notes' in archival_object.keys():
-        for note in archival_object['notes']:
-            if note['type'] == 'scopecontent':
-                return note['subnotes'][0]['content']
-    else:
-        return None
+def getSubjects(archival_object):
+    ' Returns list of subjects for an Archival Object '
+    
+    sub_list = []
+    subjects = archival_object['subjects']
+    for subject in subjects:
+        sub = subject['ref']
+        sub_rec = aspace.get(sub)
+        sub_list.append(sub_rec)
 
-test2 = getScopeAndContent(test)
-# print(test2.keys())
+    return sub_list
+
+
+def cleanSubjects(sub_list):
+    for sub in sub_list:
+        if 'authority_id' in sub.keys():
+            if sub['source'] == 'tgn' and '.edu' not in sub['authority_id']:
+                sub['authority_id'] = 'http://vocab.getty.edu/tgn/' + sub['authority_id']
+            elif sub['source'] == 'lcsh' and '.gov' not in sub['authority_id']:
+                sub['authority_id'] = 'http://id.loc.gov/authorities/' + sub['authority_id']
+            else:
+                sub['authority_id'] = sub['authority_id']
+
+    return sub_list   
+
 
 def getResource(archival_object):
     'Get the Resource Record of a given Archival Object'
+    
     resource_uri = archival_object['resource']['ref']
     resource = aspace.get(resource_uri)
+    
     return resource
 
 
-def getNotesByType(archival_object):
+def getNotesTree(archival_object):
+    ' Returns a list of tuples of all the notes from an Archival Object heirarchy '
+    
     note_tups = []
     if 'notes' in archival_object.keys():
         notes = archival_object['notes']
         for note in notes:
             if 'content' in note.keys():
-                tup = (note['type'] + '_child', note['content'])
+                tup = (note['type'], note['content'])
                 note_tups.append(tup)
             else:
-                tup = (note['type'] + '_child', note['subnotes'])
+                tup = (note['type'], note['subnotes'])
                 note_tups.append(tup)
-    # Parent
-    if 'parent' in archival_object.keys():
-        parent = archival_object['parent']['ref']
-        parent_record = aspace.get(parent)
-        if 'notes' in parent_record.keys():
-            notes = parent_record['notes']
-            for note in notes:
-                if 'content' in note.keys():
-                    tup = (note['type'] + '_parent', note['content'])
-                    note_tups.append(tup)
-                else:
-                    tup = (note['type'] + '_parent', note['subnotes'])
-                    note_tups.append(tup)
-    # Next parent
-    if 'parent' in parent_record.keys():
-        next_parent = parent_record['parent']['ref']
-        next_parent_record = aspace.get(next_parent)
-        if 'notes' in next_parent_record.keys():
-            notes = next_parent_record['notes']
-            for note in notes:
-                if 'content' in note.keys():
-                    tup = (note['type'] + '_next parent', note['content'])
-                    note_tups.append(tup)
-                else:
-                    tup = (note['type'] + '_next parent', note['subnotes']) 
-                    note_tups.append(tup)     
+
+        if 'parent' in archival_object.keys():
+            parent = archival_object['parent']['ref']
+            parent_record = aspace.get(parent)
+            if 'notes' in parent_record.keys():
+                notes = parent_record['notes']
+                for note in notes:
+                    if 'content' in note.keys():
+                        tup = (note['type'], note['content'])
+                        note_tups.append(tup)
+                    else:
+                        tup = (note['type'], note['subnotes'])
+                        note_tups.append(tup)
+
+            if 'parent' in parent_record.keys():
+                grandparent = parent_record['parent']['ref']
+                grandparent_record = aspace.get(grandparent)
+                if 'notes' in grandparent_record.keys():
+                    notes = grandparent_record['notes']
+                    for note in notes:
+                        if 'content' in note.keys():
+                            tup = (note['type'], note['content'])
+                            note_tups.append(tup)
+                        else:
+                            tup = (note['type'], note['subnotes']) 
+                            note_tups.append(tup)  
 
     resource = getResource(archival_object)
     if 'notes' in resource.keys():
         notes = resource['notes']
         for note in notes:
             if 'content' in note.keys():
-                tup = (note['type'] + '_resource', note['content'])
+                tup = (note['type'], note['content'])
                 note_tups.append(tup)
             else:
-                tup = (note['type'] + '_resource', note['subnotes'])
+                tup = (note['type'], note['subnotes'])
                 note_tups.append(tup)
-    note_dict = dict(note_tups)
 
-    return note_dict
+    return note_tups
 
-test3 = getNotesByType(test)
-# print(pprint.pformat(test3))
+
+def getNotesByType(note_tups, notetype):
+    ' Returns the dictionary for a specified note type; works in conjunction with getNotesTree '
+    
+    for note in note_tups:
+        if note[0] == notetype:
+            return note[1]
+
 
 def getSeries(resource_num):
     ' Returns first level down children of given resource '
@@ -163,34 +187,30 @@ def getAllResourceUris(resource_num):
 
 
 def getDigitalObjectUris(ao_uri_list):
-    ' Returns list of digital object uris '
+    ' Returns list of Digital Object uris '
 
     do_list = []
 
     if len(ao_uri_list) > 0:
         for uri in ao_uri_list:
             archival_object = aspace.get(uri)
-            try:
-                if 'instances' in archival_object.keys():
-                    for instance in archival_object['instances']:
-                        if 'digital_object' in instance.keys():
-                            do_list.append(instance['digital_object']['ref'])
-                else:
-                    pass
-
-            except KeyError:
-                print("Key not found")
+            if 'instances' in archival_object.keys():
+                for instance in archival_object['instances']:
+                    if 'digital_object' in instance.keys():
+                        do_list.append(instance['digital_object']['ref'])
+            else:
                 exit(1)
+
     else:
-        print("No digital objects found")
         exit(1)
 
     return do_list
 
 
-def getSlice(child_list, num=5):  # Why is this useful again?
+def getSlice(a_list, num=5):  # Why is this useful again?
     ' Returns select amount of the list to a new list '
-    piece = child_list[:num]
+    
+    piece = a_list[:num]
 
     lst = []
     for bite in piece:

@@ -103,7 +103,7 @@
   {%- endfor %}
   {%- endif %}
 </abstract>
-{%- endif -%}
+{%- endif %}
 
 <!-- Language of materials -->
 {%- if resource.language == 'eng' %}
@@ -117,12 +117,12 @@
 {%- endif %}
 
 <!-- Scope and content -->
-{%- if abstract %}<abstract type="description">{%- for item in abstract.content %}{{item}}{%- endfor %} </abstract>{%- endif %}
+{%- if abstract %}<abstract type="description">{%- for item in abstract %}{{item.content}}{%- endfor %} </abstract>{%- endif %}
 
 <!-- Conditions governing use -->
 {%- if userestrict %}<accessCondition type="use and reproduction" displayLabel="Collection Use and Reproduction">{%- for item in userestrict %} {{item.content}} {%- endfor %}</accessCondition>{%- endif %}
 
-{%- if accessrestrict %}<accessCondition type="restriction on access" displayLabel="Collection Access">{%- for item in accessrestrict %} {{item.content}} {%- endfor %}</accessCondition>{%- endif %}
+{% if accessrestrict %}<accessCondition type="restriction on access" displayLabel="Collection Access">{%- for item in accessrestrict %} {{item.content}} {%- endfor %}</accessCondition>{%- endif %}
 
 <!-- Shelf location -->
 {%- if container %}

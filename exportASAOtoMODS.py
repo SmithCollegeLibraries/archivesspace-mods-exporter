@@ -118,22 +118,6 @@ def getMsNo(archival_object):
     return ms_no
 
 
-# ['langmaterial', 'abstract', 'arrangement', 'accessrestrict', 'userestrict', 'prefercite', 'acqinfo', 'processinfo', 'relatedmaterial', 'phystech']
-def getNotesByType(resource, notetype):
-
-    notes = resource['notes']
-    note_tups = []
-    for note in notes:
-        if 'content' in note.keys():
-            tup = (note['type'], note['content'])
-        else:
-            tup = (note['type'], note['subnotes'])
-            note_tups.append(tup)
-    note_dict = dict(note_tups)
-
-    return note_dict[notetype]
-
-
 class AoGeneologyChain(object):
     def __init__(self, archival_object):
         '''Traverse all parent AOs and save them to a list. Also tack on the
@@ -348,23 +332,19 @@ def renderRecord(do_uri):
     container = getShelfLocation(archival_object)
     folder = getFolder(archival_object)
     resource = getResource(archival_object)
-    arrangement = getNotesByType(resource, 'arrangement')
-    arrangement_desc = arrangement[0]['content']
-    arrangement_items = arrangement[1]['items']
-    for note in resource['notes']:
-        if 'abstract' == note['type']:
-            abstract = note
-    # abstract = abstract['content'][0]
-    userestrict = getNotesByType(resource, 'userestrict')
-    accrestrict = getNotesByType(resource, 'accessrestrict')
+    notes = getNotesTree(archival_object)
+    abstract = getNotesByType(notes, 'scopecontent')
+    userestrict = getNotesByType(notes, 'userestrict')
+    accrestrict = getNotesByType(notes, 'accessrestrict')
     collecting_unit = getCollectingUnit(archival_object)
     ms_no = getMsNo(archival_object)
     repository = getRepository(archival_object)
     mychain = AoGeneologyChain(archival_object)
-    subjects = mychain.getSubjectsInherited(mychain)
+    subjects = getSubjects(archival_object)
+    subjects_cleaned = cleanSubjects(subjects)
     agents = mychain.getAgentsInherited(mychain)
 
-    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'ar_desc': arrangement_desc, 'ar_items': arrangement_items, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
+    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects_cleaned, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
 
     templateLoader = jinja2.FileSystemLoader(searchpath=".")
     templateEnv = jinja2.Environment(loader=templateLoader)
@@ -384,6 +364,15 @@ ywca_photo_uris = getAllResourceUris(676)
 
 'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
 do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
+
+# sample = getSlice(do_photo_uris, 10)
+
+# count = 0
+# for x in sample:
+#     count += 1
+#     print(count)
+#     record = renderRecord(x)
+#     print(record)
 
 'Writing the files'
 count = 0

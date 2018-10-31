@@ -72,13 +72,13 @@ def getShelfLocation(archival_object):
 
 
 def getFolder(archival_object):
-    folder = ""
+    # folder = None
     try:
         fol = archival_object['instances'][0]['sub_container']['type_2'].capitalize()
         num = archival_object['instances'][0]['sub_container']['indicator_2']
         folder = fol + " " + num
     except KeyError:
-        pass
+        return None
 
     return folder
 

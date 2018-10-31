@@ -94,7 +94,7 @@
 {%- endif %}
 
 <!-- Arrangement -->
-<abstract type="arrangement">{%- if ar_desc %}{{ar_desc}}{%- endif -%}
+{%- if ar_desc %}<abstract type="arrangement">{{ar_desc}}
   {%- if ar_items -%}
   {%- for item in ar_items -%}
   <list type="simple">
@@ -103,6 +103,7 @@
   {%- endfor %}
   {%- endif %}
 </abstract>
+{%- endif -%}
 
 <!-- Language of materials -->
 {%- if resource.language == 'eng' %}
@@ -116,18 +117,20 @@
 {%- endif %}
 
 <!-- Scope and content -->
-<abstract type="description">{%- if abstract %}{%- for item in abstract.content %}{{item}}{%- endfor %} {%- endif %}</abstract>
+{%- if abstract %}<abstract type="description">{%- for item in abstract.content %}{{item}}{%- endfor %} </abstract>{%- endif %}
 
 <!-- Conditions governing use -->
-<accessCondition type="use and reproduction" displayLabel="Collection Use and Reproduction">{%- if userestrict %}{%- for item in userestrict %} {{item.content}} {%- endfor %}{%- endif %}</accessCondition>
+{%- if userestrict %}<accessCondition type="use and reproduction" displayLabel="Collection Use and Reproduction">{%- for item in userestrict %} {{item.content}} {%- endfor %}</accessCondition>{%- endif %}
 
-<accessCondition type="restriction on access" displayLabel="Collection Access">{%- if accessrestrict %}{%- for item in accessrestrict %} {{item.content}} {%- endfor %}{%- endif %}</accessCondition>
+{%- if accessrestrict %}<accessCondition type="restriction on access" displayLabel="Collection Access">{%- for item in accessrestrict %} {{item.content}} {%- endfor %}</accessCondition>{%- endif %}
 
 <!-- Shelf location -->
+{%- if container %}
 <location>
-  <shelfLocator>{%- if container %} {{container}} {%- endif %} {%- if folder|length > 1 %}, {{folder}} {%- endif %}
+  <shelfLocator> {{container}} {%- if folder|length > 1 %}, {{folder}} {%- endif %}
   </shelfLocator>
 </location>
+{%- endif %}
 
 <!-- Digital object ID -->
 <identifier type="local">{{digital_object.digital_object_id}}</identifier>

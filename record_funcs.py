@@ -11,7 +11,7 @@ import logging
 CONFIGFILE = "archivesspace.cfg"
 
 argparser = argparse.ArgumentParser()
-argparser.add_argument("outputpath", help="File path for record output")
+# argparser.add_argument("outputpath", help="File path for record output")
 argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
 cliArguments = argparser.parse_args()
 
@@ -21,6 +21,80 @@ aspace.connect()
 
 ##-------------------------------- ##
 
+test = aspace.get('/repositories/2/archival_objects/104935')
+
+def getScopeAndContent(archival_object):
+    if 'notes' in archival_object.keys():
+        for note in archival_object['notes']:
+            if note['type'] == 'scopecontent':
+                return note['subnotes'][0]['content']
+    else:
+        return None
+
+test2 = getScopeAndContent(test)
+# print(test2.keys())
+
+def getResource(archival_object):
+    'Get the Resource Record of a given Archival Object'
+    resource_uri = archival_object['resource']['ref']
+    resource = aspace.get(resource_uri)
+    return resource
+
+
+def getNotesByType(archival_object):
+    note_tups = []
+    if 'notes' in archival_object.keys():
+        notes = archival_object['notes']
+        for note in notes:
+            if 'content' in note.keys():
+                tup = (note['type'] + '_child', note['content'])
+                note_tups.append(tup)
+            else:
+                tup = (note['type'] + '_child', note['subnotes'])
+                note_tups.append(tup)
+    # Parent
+    if 'parent' in archival_object.keys():
+        parent = archival_object['parent']['ref']
+        parent_record = aspace.get(parent)
+        if 'notes' in parent_record.keys():
+            notes = parent_record['notes']
+            for note in notes:
+                if 'content' in note.keys():
+                    tup = (note['type'] + '_parent', note['content'])
+                    note_tups.append(tup)
+                else:
+                    tup = (note['type'] + '_parent', note['subnotes'])
+                    note_tups.append(tup)
+    # Next parent
+    if 'parent' in parent_record.keys():
+        next_parent = parent_record['parent']['ref']
+        next_parent_record = aspace.get(next_parent)
+        if 'notes' in next_parent_record.keys():
+            notes = next_parent_record['notes']
+            for note in notes:
+                if 'content' in note.keys():
+                    tup = (note['type'] + '_next parent', note['content'])
+                    note_tups.append(tup)
+                else:
+                    tup = (note['type'] + '_next parent', note['subnotes']) 
+                    note_tups.append(tup)     
+
+    resource = getResource(archival_object)
+    if 'notes' in resource.keys():
+        notes = resource['notes']
+        for note in notes:
+            if 'content' in note.keys():
+                tup = (note['type'] + '_resource', note['content'])
+                note_tups.append(tup)
+            else:
+                tup = (note['type'] + '_resource', note['subnotes'])
+                note_tups.append(tup)
+    note_dict = dict(note_tups)
+
+    return note_dict
+
+test3 = getNotesByType(test)
+# print(pprint.pformat(test3))
 
 def getSeries(resource_num):
     ' Returns first level down children of given resource '

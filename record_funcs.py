@@ -25,6 +25,7 @@ aspace.connect()
 
 def getSubjects(archival_object):
     ' Returns list of subjects for an Archival Object '
+    ' Only looking at Archival Object level -- NOT getting them from the hierarchy because all YWCA AOs with Digital Objects have subjects at the AO level '
     
     sub_list = []
     subjects = archival_object['subjects']
@@ -37,6 +38,7 @@ def getSubjects(archival_object):
 
 
 def cleanSubjects(sub_list):
+    ' Adds full URL address to authority ids of any subjects with authority ids that are not full URLs ' 
     for sub in sub_list:
         if 'authority_id' in sub.keys():
             if sub['source'] == 'tgn' and '.edu' not in sub['authority_id']:
@@ -47,15 +49,6 @@ def cleanSubjects(sub_list):
                 sub['authority_id'] = sub['authority_id']
 
     return sub_list   
-
-
-def getResource(archival_object):
-    'Get the Resource Record of a given Archival Object'
-    
-    resource_uri = archival_object['resource']['ref']
-    resource = aspace.get(resource_uri)
-    
-    return resource
 
 
 def getNotesTree(archival_object):
@@ -178,6 +171,7 @@ def getChildUris(series):  # Could probably be reworked
 
 def getAllResourceUris(resource_num):
     ' Calls getSeries and getChildUris to return all the Archival Object URIs for a resource '
+    
     hierarchy = getSeries(resource_num)
     uri_lst = []
     for level in hierarchy:

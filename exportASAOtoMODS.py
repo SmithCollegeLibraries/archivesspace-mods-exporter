@@ -60,19 +60,20 @@ def getArchivalObject(do_uri):
 
 def getShelfLocation(archival_object):
     'Get the Shelf Location of a given Archival Object'
-    top_container_title = ""
+    # top_container_title = ""
     try:
         top_container_uri = archival_object['instances'][0]['sub_container']['top_container']['ref']
         top_container = aspace.get(top_container_uri)
         top_container_title = top_container['display_string']
     except KeyError:
-        pass
+        return None
 
     return top_container_title
 
 
 def getFolder(archival_object):
-    # folder = None
+    ' Gets the folder if there is one of an Archival Object '
+
     try:
         fol = archival_object['instances'][0]['sub_container']['type_2'].capitalize()
         num = archival_object['instances'][0]['sub_container']['indicator_2']
@@ -237,13 +238,13 @@ class AoGeneologyChain(object):
         if myagents:
             return myagents
 
-    def getSubjectsInherited(self, mychain):
-        '''Get subject data from either the current Archival Object, its parent
-        Archival Objects, or the Resource Record. 'Lazily' i.e. stop as soon as
-        I find subjects as I traverse up the geneology chain.
-        '''
-        subjects = self.lazyFind('subjects')
-        return subjects
+    # def getSubjectsInherited(self, mychain):
+    #     '''Get subject data from either the current Archival Object, its parent
+    #     Archival Objects, or the Resource Record. 'Lazily' i.e. stop as soon as
+    #     I find subjects as I traverse up the geneology chain.
+    #     '''
+    #     subjects = self.lazyFind('subjects')
+    #     return subjects
 
     def getAgentsInherited(self, mychain):
         """Get agents running up the inheritance chain handling them
@@ -272,28 +273,28 @@ class AoGeneologyChain(object):
         #             agents['subjects'].append(agent)
         return agents
 
-    def getNotesByType(self, noteType):
-        '''Traverse all parent AOs and the Resource Record and get all the
-        notes of given type
-        '''
-        notes = []
-        for archival_object in self.aoGeneologyChain:
-            try:
-                for note in archival_object['notes']:
-                    if note['type'] == noteType:
-                        notes.append(note)
-            except KeyError:
-                pass
-        return notes
+    # def getNotesByType(self, noteType):
+    #     '''Traverse all parent AOs and the Resource Record and get all the
+    #     notes of given type
+    #     '''
+    #     notes = []
+    #     for archival_object in self.aoGeneologyChain:
+    #         try:
+    #             for note in archival_object['notes']:
+    #                 if note['type'] == noteType:
+    #                     notes.append(note)
+    #         except KeyError:
+    #             pass
+    #     return notes
 
-    def getAllNotes(self):
-        # Get list of controled values for note types
-        enums = aspace.get(NOTETYPESURI)
-        noteTypeS = enums['values']
-        notes = dict()
-        for noteType in noteTypeS:
-            notes[noteType] = self.getNotesByType(noteType)
-        return notes
+    # def getAllNotes(self):
+    #     # Get list of controled values for note types
+    #     enums = aspace.get(NOTETYPESURI)
+    #     noteTypeS = enums['values']
+    #     notes = dict()
+    #     for noteType in noteTypeS:
+    #         notes[noteType] = self.getNotesByType(noteType)
+    #     return notes
 
 
 # mychain = AoGeneologyChain(archival_object)

@@ -21,7 +21,7 @@ aspace.connect()
 
 ##-------------------------------- ##
 
-test = aspace.get('/repositories/2/archival_objects/104498')
+# test = aspace.get('/repositories/2/archival_objects/104905')
 
 def getSubjects(archival_object):
     ' Returns list of subjects for an Archival Object '

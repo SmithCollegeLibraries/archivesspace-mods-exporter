@@ -1,5 +1,4 @@
 # About
-
 # Usage
 
 # Acceptance Criteria

@@ -11,7 +11,7 @@ import logging
 CONFIGFILE = "archivesspace.cfg"
 
 argparser = argparse.ArgumentParser()
-argparser.add_argument("outputpath", help="File path for record output")
+# argparser.add_argument("outputpath", help="File path for record output")
 argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
 cliArguments = argparser.parse_args()
 
@@ -211,3 +211,4 @@ def getSlice(a_list, num=5):  # Why is this useful again?
         lst.append(bite)
 
     return lst
+

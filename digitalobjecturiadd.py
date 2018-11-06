@@ -67,7 +67,8 @@ def updateDOwithCompassURI(ywca_compass_object):
 	return digital_object['digital_object_id']
 
 
-# ## -- Function call -- ##
+## -- Function call -- ##
+
 for compass_ob in ywca_compass_objects:
 	print(updateDOwithCompassURI(compass_ob))
 

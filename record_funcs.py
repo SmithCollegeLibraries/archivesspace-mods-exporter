@@ -21,7 +21,21 @@ aspace.connect()
 
 ##-------------------------------- ##
 
-# test = aspace.get('/repositories/2/archival_objects/104905')
+test = aspace.get('/repositories/2/digital_objects/528')
+print(pprint.pformat(test))
+
+
+def getModsFileName(digital_object):
+    ' Returns file name in format islandora_NUMBER_MODS '
+
+    uri = digital_object['file_versions'][0]['file_uri']
+    split_uri = uri.split('/')
+    islandora_pid = split_uri[4]
+    formatted_islandora_pid = islandora_pid.replace(':', '_')
+    mods_file_name = formatted_islandora_pid + '_MODS'
+
+    return mods_file_name
+
 
 def getSubjects(archival_object):
     ' Returns list of subjects for an Archival Object '

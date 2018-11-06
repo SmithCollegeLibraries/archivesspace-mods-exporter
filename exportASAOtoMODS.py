@@ -3,10 +3,15 @@ import jinja2
 import pprint
 from utilities import *
 import argparse
+import glob
+import os.path
+from record_funcs import *
+import logging
 
 CONFIGFILE = "archivesspace.cfg"
 
 argparser = argparse.ArgumentParser()
+argparser.add_argument("outputpath", help="File path for record output.")
 argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
 cliArguments = argparser.parse_args()
 
@@ -28,59 +33,55 @@ Concepts:
 
 NOTETYPESURI = '/config/enumerations/45'
 
-# Retrieve the DO
-# Find the DO's parent AO
-# archival_object = aspace.get('/repositories/2/archival_objects/105443') #159445
-# archival_object = aspace.get('/repositories/2/archival_objects/159445')
-# print(pprint.pformat(archival_object.keys()))
-# Find the AO's parent resource
-# 845
+print("*********")
 
-print("*********")  # 162
 
-# digital_object = aspace.get("/repositories/2/digital_objects/162")
-# print(digital_object)
-# '/repositories/2/digital_objects/162'
-# archival_object = aspace.get('/repositories/2/archival_objects/104115')
-# print(archival_object)
+def getDigitalObject(do_uri):
+    'Get Digital Object from Digital Object URI'
+    digital_object = aspace.get(do_uri)
 
-digital_object = "/repositories/2/digital_objects/189"
-archival_object = None
-# '/repositories/2/archival_objects/104807'
+    return digital_object
 
-if digital_object != None:
-    digital_object = aspace.get(digital_object)
+# do_id = digital_object['digital_object_id']
+# do_uri = digital_object['uri']
 
-    'Get the Archival Object record from the given Digital Object'
-    try:
-        archival_object_uri = digital_object['linked_instances'][0]['ref']
-        archival_object = aspace.get(archival_object_uri)
-    except KeyError:
-        pass
 
-elif archival_object != None:
-    archival_object = aspace.get(archival_object)
+def getArchivalObject(do_uri):
+    'Get an Archival Object Record from a Digital Object URI'
+    digital_object = getDigitalObject(do_uri)
+    archival_object_uri = digital_object['linked_instances'][0]['ref']
+    archival_object = aspace.get(archival_object_uri)
 
-else:
-    pass
+    return archival_object
 
-# print(archival_object)
+# ao_id = archival_object['ref_id']
+# ao_uri = archival_object['uri']
 
 
 def getShelfLocation(archival_object):
     'Get the Shelf Location of a given Archival Object'
-    top_container_title = ""
+    # top_container_title = ""
     try:
         top_container_uri = archival_object['instances'][0]['sub_container']['top_container']['ref']
         top_container = aspace.get(top_container_uri)
         top_container_title = top_container['display_string']
-    except IndexError:
-        pass
+    except KeyError:
+        return None
 
     return top_container_title
 
 
-container = getShelfLocation(archival_object)
+def getFolder(archival_object):
+    ' Gets the folder if there is one of an Archival Object '
+
+    try:
+        fol = archival_object['instances'][0]['sub_container']['type_2'].capitalize()
+        num = archival_object['instances'][0]['sub_container']['indicator_2']
+        folder = fol + " " + num
+    except KeyError:
+        return None
+
+    return folder
 
 
 def getResource(archival_object):
@@ -90,18 +91,11 @@ def getResource(archival_object):
     return resource
 
 
-resource = getResource(archival_object)
-
-
-# Find the parent repo
 def getRepository(archival_object):
     'Get the repository of a given Archival Object'
     repository_uri = archival_object['repository']['ref']
     repository = aspace.get(repository_uri)
     return repository
-
-
-repository = getRepository(archival_object)
 
 
 def getCollectingUnit(archival_object):
@@ -110,9 +104,6 @@ def getCollectingUnit(archival_object):
     collecting_unit = repository['name']
 
     return collecting_unit
-
-
-collecting_unit = getCollectingUnit(archival_object)
 
 
 def getMsNo(archival_object):
@@ -126,9 +117,6 @@ def getMsNo(archival_object):
         ms_no = 'MS' + ' ' + resource['id_0'][:3]
 
     return ms_no
-
-
-ms_no = getMsNo(archival_object)
 
 
 class AoGeneologyChain(object):
@@ -250,19 +238,20 @@ class AoGeneologyChain(object):
         if myagents:
             return myagents
 
-    def getSubjectsInherited(self):
-        '''Get subject data from either the current Archival Object, its parent
-        Archival Objects, or the Resource Record. 'Lazily' i.e. stop as soon as
-        I find subjects as I traverse up the geneology chain.
-        '''
-        subjects = self.lazyFind('subjects')
-        return subjects
+    # def getSubjectsInherited(self, mychain):
+    #     '''Get subject data from either the current Archival Object, its parent
+    #     Archival Objects, or the Resource Record. 'Lazily' i.e. stop as soon as
+    #     I find subjects as I traverse up the geneology chain.
+    #     '''
+    #     subjects = self.lazyFind('subjects')
+    #     return subjects
 
-    def getAgentsInherited(self):
+    def getAgentsInherited(self, mychain):
         """Get agents running up the inheritance chain handling them
         independently by type: creator, source, subject.
         """
         # agentsAnyType = self.lazyFind('linked_agents')
+        # mychain = AoGeneologyChain(archival_object)
 
         agents = {}
         # Sort agents out into their roles for different uses in the MARC record
@@ -284,41 +273,39 @@ class AoGeneologyChain(object):
         #             agents['subjects'].append(agent)
         return agents
 
-    def getNotesByType(self, noteType):
-        '''Traverse all parent AOs and the Resource Record and get all the
-        notes of given type
-        '''
-        notes = []
-        for archival_object in self.aoGeneologyChain:
-            try:
-                for note in archival_object['notes']:
-                    if note['type'] == noteType:
-                        notes.append(note)
-            except KeyError:
-                pass
-        return notes
+    # def getNotesByType(self, noteType):
+    #     '''Traverse all parent AOs and the Resource Record and get all the
+    #     notes of given type
+    #     '''
+    #     notes = []
+    #     for archival_object in self.aoGeneologyChain:
+    #         try:
+    #             for note in archival_object['notes']:
+    #                 if note['type'] == noteType:
+    #                     notes.append(note)
+    #         except KeyError:
+    #             pass
+    #     return notes
 
-    def getAllNotes(self):
-        # Get list of controled values for note types
-        enums = aspace.get(NOTETYPESURI)
-        noteTypeS = enums['values']
-        notes = dict()
-        for noteType in noteTypeS:
-            notes[noteType] = self.getNotesByType(noteType)
-        return notes
+    # def getAllNotes(self):
+    #     # Get list of controled values for note types
+    #     enums = aspace.get(NOTETYPESURI)
+    #     noteTypeS = enums['values']
+    #     notes = dict()
+    #     for noteType in noteTypeS:
+    #         notes[noteType] = self.getNotesByType(noteType)
+    #     return notes
 
 
-mychain = AoGeneologyChain(archival_object)
+# mychain = AoGeneologyChain(archival_object)
+# notes = getNotesByType(mychain, userestrict)
 
+# print(notes)
 
 # Traverse all parent AOs and the Resource Record and get their subjects
-subjects = mychain.getSubjectsInherited()  # What if I replace this with subject_lst???? Or create another variable???
-# print([subject.keys() for subject in subjects])
+# subjects = mychain.getSubjectsInherited()
 
-# print(pprint.pformat(subjects))
-
-
-agents = mychain.getAgentsInherited()
+# agents = mychain.getAgentsInherited()
 
 
 # Debug
@@ -339,16 +326,67 @@ agents = mychain.getAgentsInherited()
 #     pass
 
 
-# Compile all the data into a big structure for jinja
-data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'container': container}
+def renderRecord(do_uri):
+    'Call all the functions'
+    digital_object = getDigitalObject(do_uri)
+    archival_object = getArchivalObject(do_uri)
+    container = getShelfLocation(archival_object)
+    folder = getFolder(archival_object)
+    resource = getResource(archival_object)
+    notes = getNotesTree(archival_object)
+    abstract = getNotesByType(notes, 'scopecontent')
+    userestrict = getNotesByType(notes, 'userestrict')
+    accrestrict = getNotesByType(notes, 'accessrestrict')
+    collecting_unit = getCollectingUnit(archival_object)
+    ms_no = getMsNo(archival_object)
+    repository = getRepository(archival_object)
+    mychain = AoGeneologyChain(archival_object)
+    subjects = getSubjects(archival_object)
+    subjects_cleaned = cleanSubjects(subjects)
+    agents = mychain.getAgentsInherited(mychain)
 
-# Set up jinja loader and template objects
-templateLoader = jinja2.FileSystemLoader(searchpath=".")
-templateEnv = jinja2.Environment(loader=templateLoader)
+    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects_cleaned, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
+
+    templateLoader = jinja2.FileSystemLoader(searchpath=".")
+    templateEnv = jinja2.Environment(loader=templateLoader)
+
+    # Merge the template and data
+    template = templateEnv.get_template('compass-mods-template.xml')
+
+    return template.render(data)
 
 
-# Merge the template and data
-template = templateEnv.get_template('compass-mods-template.xml')
-print(template.render(data))
+' ********************************* '
+' ***** Calling the functions ***** '
+' ********************************* '
 
-# Write the file?
+'Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records'
+ywca_photo_uris = getAllResourceUris(676)
+
+'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
+do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
+
+# sample = getSlice(do_photo_uris, 10)
+
+# count = 0
+# for x in sample:
+#     count += 1
+#     print(count)
+#     record = renderRecord(x)
+#     print(record)
+
+'Writing the files'
+count = 0
+for do_uri in do_photo_uris:
+    count += 1
+    print(count)
+
+    xml = renderRecord(do_uri)
+    do = getDigitalObject(do_uri)
+    handle = do['digital_object_id']
+    save_path = cliArguments.outputpath
+    filename = os.path.join(save_path, handle + ".xml")
+
+    with open(filename, "w") as fh:
+        logging.info('Writing %s' % filename)
+        fh.write(xml)

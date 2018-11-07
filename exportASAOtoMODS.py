@@ -397,11 +397,8 @@ do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
 #     print(xml, do_uri)
 
 'Writing the files'
-count = 0
 for do_uri in do_photo_uris:
 
-    # count += 1
-    # print(count)
     logging.info('Rendering MODS record for %s' % do_uri)
     xml = renderRecord(do_uri)
     do = getDigitalObject(do_uri)

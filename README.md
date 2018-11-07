@@ -78,4 +78,5 @@ Next steps:
 3. Enter desired query, such as:
 - RELS_EXT_isMemberOfCollection_uri_t:"smith\:ssc--ms0324rg9" PID, mods_identifier_local_s, mods_titleInfo_title_s (this one retrieves the PID, local id, and title for all digital objects in the YWCA U.S.A photographic collection)
 4. Set wt field to ‘json’
-5. To save JSON file: In the command line, write: curl “URL of JSON output” >> filename.json
+5. To save JSON file: 
+- In the command line, write: curl “URL of JSON output” >> filename.json

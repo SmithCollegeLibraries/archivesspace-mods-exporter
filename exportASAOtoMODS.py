@@ -31,6 +31,8 @@ Concepts:
 
 """
 
+logging.basicConfig(level=logging.INFO)
+
 NOTETYPESURI = '/config/enumerations/45'
 
 print("*********")
@@ -38,6 +40,8 @@ print("*********")
 
 def getDigitalObject(do_uri):
     'Get Digital Object from Digital Object URI'
+
+    logging.info('Retrieving Digital Object from Digital Object URI')
     digital_object = aspace.get(do_uri)
 
     return digital_object
@@ -47,7 +51,9 @@ def getDigitalObject(do_uri):
 
 
 def getArchivalObject(do_uri):
-    'Get an Archival Object Record from a Digital Object URI'
+    'Get an Archival Object from a Digital Object URI'
+
+    logging.info('Retrieving Archival Object from Digital Object %s' % do_uri)
     digital_object = getDigitalObject(do_uri)
     archival_object_uri = digital_object['linked_instances'][0]['ref']
     archival_object = aspace.get(archival_object_uri)
@@ -60,7 +66,8 @@ def getArchivalObject(do_uri):
 
 def getShelfLocation(archival_object):
     'Get the Shelf Location of a given Archival Object'
-    # top_container_title = ""
+    
+    logging.info('Retrieving Shelf Location of Archival Object %s' % archival_object)
     try:
         top_container_uri = archival_object['instances'][0]['sub_container']['top_container']['ref']
         top_container = aspace.get(top_container_uri)
@@ -74,6 +81,7 @@ def getShelfLocation(archival_object):
 def getFolder(archival_object):
     ' Gets the folder if there is one of an Archival Object '
 
+    logging.info('Retrieving folder of Archival Object %s' % archival_object)
     try:
         fol = archival_object['instances'][0]['sub_container']['type_2'].capitalize()
         num = archival_object['instances'][0]['sub_container']['indicator_2']
@@ -86,6 +94,8 @@ def getFolder(archival_object):
 
 def getResource(archival_object):
     'Get the Resource Record of a given Archival Object'
+
+    logging.info('Retrieving Resource of Archival Object %s' % archival_object)
     resource_uri = archival_object['resource']['ref']
     resource = aspace.get(resource_uri)
     return resource
@@ -93,6 +103,8 @@ def getResource(archival_object):
 
 def getRepository(archival_object):
     'Get the repository of a given Archival Object'
+
+    logging.info('Retrieving Repository of Archival Object %s' % archival_object)
     repository_uri = archival_object['repository']['ref']
     repository = aspace.get(repository_uri)
     return repository
@@ -100,6 +112,8 @@ def getRepository(archival_object):
 
 def getCollectingUnit(archival_object):
     'Get the collecting unit of a given Archival Object'
+
+    logging.info('Retrieving Collecting Unit of Archival Object %s' % archival_object)
     repository = getRepository(archival_object)
     collecting_unit = repository['name']
 
@@ -108,6 +122,8 @@ def getCollectingUnit(archival_object):
 
 def getMsNo(archival_object):
     'Get the MS number of a given Archival Object'
+
+    logging.info('Retrieving MS number of Archival Object %s' % archival_object)
     resource = getResource(archival_object)
     try:
         id_1 = resource['id_1']
@@ -328,6 +344,8 @@ class AoGeneologyChain(object):
 
 def renderRecord(do_uri):
     'Call all the functions'
+
+    logging.info('Calling all functions and rendering the MODS records')
     digital_object = getDigitalObject(do_uri)
     archival_object = getArchivalObject(do_uri)
     container = getShelfLocation(archival_object)
@@ -366,30 +384,31 @@ ywca_photo_uris = getAllResourceUris(676)
 'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
 do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
 
-# sample = getSlice(do_photo_uris, 10)
+sample = getSlice(do_photo_uris, 10)
 
-# count = 0
-# for x in sample:
-#     count += 1
-#     print(count)
-#     digital_object = getDigitalObject(x)
-#     do_uri = digital_object['digital_object_id']
-#     file_name = getModsFileName(digital_object)
-#     xml = file_name + '.xml'
-    # print(xml, do_uri)
-
-'Writing the files'
 count = 0
-for do_uri in do_photo_uris:
+for x in sample:
     count += 1
     print(count)
+    digital_object = getDigitalObject(x)
+    do_uri = digital_object['digital_object_id']
+    file_name = getModsFileName(digital_object)
+    xml = file_name + '.xml'
+    print(xml, do_uri)
 
-    xml = renderRecord(do_uri)
-    do = getDigitalObject(do_uri)
-    handle = getModsFileName(do)
-    save_path = cliArguments.outputpath
-    filename = os.path.join(save_path, handle + ".xml")
+'Writing the files'
+# count = 0
+# for do_uri in do_photo_uris:
 
-    with open(filename, "w") as fh:
-        logging.info('Writing %s' % filename)
-        fh.write(xml)
+#     # count += 1
+#     # print(count)
+#     logging.info('Rendering MODS record for %s' % do_uri)
+#     xml = renderRecord(do_uri)
+#     do = getDigitalObject(do_uri)
+#     handle = getModsFileName(do)
+#     save_path = cliArguments.outputpath
+#     filename = os.path.join(save_path, handle + ".xml")
+
+#     with open(filename, "w") as fh:
+#         logging.info('Writing %s' % filename)
+#         fh.write(xml)

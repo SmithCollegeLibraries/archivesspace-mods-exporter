@@ -11,7 +11,7 @@ import logging
 CONFIGFILE = "archivesspace.cfg"
 
 argparser = argparse.ArgumentParser()
-# argparser.add_argument("outputpath", help="File path for record output.")
+argparser.add_argument("outputpath", help="File path for record output.")
 argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
 cliArguments = argparser.parse_args()
 
@@ -384,31 +384,31 @@ ywca_photo_uris = getAllResourceUris(676)
 'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
 do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
 
-sample = getSlice(do_photo_uris, 10)
+# sample = getSlice(do_photo_uris, 10)
 
-count = 0
-for x in sample:
-    count += 1
-    print(count)
-    digital_object = getDigitalObject(x)
-    do_uri = digital_object['digital_object_id']
-    file_name = getModsFileName(digital_object)
-    xml = file_name + '.xml'
-    print(xml, do_uri)
+# count = 0
+# for x in sample:
+#     count += 1
+#     print(count)
+#     digital_object = getDigitalObject(x)
+#     do_uri = digital_object['digital_object_id']
+#     file_name = getModsFileName(digital_object)
+#     xml = file_name + '.xml'
+#     print(xml, do_uri)
 
 'Writing the files'
-# count = 0
-# for do_uri in do_photo_uris:
+count = 0
+for do_uri in do_photo_uris:
 
-#     # count += 1
-#     # print(count)
-#     logging.info('Rendering MODS record for %s' % do_uri)
-#     xml = renderRecord(do_uri)
-#     do = getDigitalObject(do_uri)
-#     handle = getModsFileName(do)
-#     save_path = cliArguments.outputpath
-#     filename = os.path.join(save_path, handle + ".xml")
+    # count += 1
+    # print(count)
+    logging.info('Rendering MODS record for %s' % do_uri)
+    xml = renderRecord(do_uri)
+    do = getDigitalObject(do_uri)
+    handle = getModsFileName(do)
+    save_path = cliArguments.outputpath
+    filename = os.path.join(save_path, handle + ".xml")
 
-#     with open(filename, "w") as fh:
-#         logging.info('Writing %s' % filename)
-#         fh.write(xml)
+    with open(filename, "w") as fh:
+        logging.info('Writing %s' % filename)
+        fh.write(xml)

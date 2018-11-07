@@ -11,7 +11,7 @@ import logging
 CONFIGFILE = "archivesspace.cfg"
 
 argparser = argparse.ArgumentParser()
-# argparser.add_argument("outputpath", help="File path for record output")
+argparser.add_argument("outputpath", help="File path for record output")
 argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
 cliArguments = argparser.parse_args()
 
@@ -21,8 +21,6 @@ aspace.connect()
 
 ##-------------------------------- ##
 
-# test = aspace.get('/repositories/2/digital_objects/528')
-# print(pprint.pformat(test))
 
 logging.basicConfig(level=logging.INFO)
 

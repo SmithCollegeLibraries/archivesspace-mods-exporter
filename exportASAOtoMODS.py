@@ -67,7 +67,7 @@ def getArchivalObject(do_uri):
 def getShelfLocation(archival_object):
     'Get the Shelf Location of a given Archival Object'
     
-    logging.info('Retrieving Shelf Location of Archival Object %s' % archival_object)
+    logging.info('Retrieving Shelf Location of Archival Object %s' % archival_object['uri'])
     try:
         top_container_uri = archival_object['instances'][0]['sub_container']['top_container']['ref']
         top_container = aspace.get(top_container_uri)
@@ -81,7 +81,7 @@ def getShelfLocation(archival_object):
 def getFolder(archival_object):
     ' Gets the folder if there is one of an Archival Object '
 
-    logging.info('Retrieving folder of Archival Object %s' % archival_object)
+    logging.info('Retrieving folder of Archival Object %s' % archival_object['uri'])
     try:
         fol = archival_object['instances'][0]['sub_container']['type_2'].capitalize()
         num = archival_object['instances'][0]['sub_container']['indicator_2']
@@ -92,19 +92,10 @@ def getFolder(archival_object):
     return folder
 
 
-def getResource(archival_object):
-    'Get the Resource Record of a given Archival Object'
-
-    logging.info('Retrieving Resource of Archival Object %s' % archival_object)
-    resource_uri = archival_object['resource']['ref']
-    resource = aspace.get(resource_uri)
-    return resource
-
-
 def getRepository(archival_object):
     'Get the repository of a given Archival Object'
 
-    logging.info('Retrieving Repository of Archival Object %s' % archival_object)
+    logging.info('Retrieving Repository of Archival Object %s' % archival_object['uri'])
     repository_uri = archival_object['repository']['ref']
     repository = aspace.get(repository_uri)
     return repository
@@ -113,7 +104,7 @@ def getRepository(archival_object):
 def getCollectingUnit(archival_object):
     'Get the collecting unit of a given Archival Object'
 
-    logging.info('Retrieving Collecting Unit of Archival Object %s' % archival_object)
+    logging.info('Retrieving Collecting Unit of Archival Object %s' % archival_object['uri'])
     repository = getRepository(archival_object)
     collecting_unit = repository['name']
 
@@ -123,7 +114,7 @@ def getCollectingUnit(archival_object):
 def getMsNo(archival_object):
     'Get the MS number of a given Archival Object'
 
-    logging.info('Retrieving MS number of Archival Object %s' % archival_object)
+    logging.info('Retrieving MS number of Archival Object %s' % archival_object['uri'])
     resource = getResource(archival_object)
     try:
         id_1 = resource['id_1']
@@ -384,28 +375,20 @@ ywca_photo_uris = getAllResourceUris(676)
 'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
 do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
 
-# sample = getSlice(do_photo_uris, 10)
-
-# count = 0
-# for x in sample:
-#     count += 1
-#     print(count)
-#     digital_object = getDigitalObject(x)
-#     do_uri = digital_object['digital_object_id']
-#     file_name = getModsFileName(digital_object)
-#     xml = file_name + '.xml'
-#     print(xml, do_uri)
-
 'Writing the files'
-for do_uri in do_photo_uris:
+save_path = cliArguments.outputpath
 
-    logging.info('Rendering MODS record for %s' % do_uri)
-    xml = renderRecord(do_uri)
-    do = getDigitalObject(do_uri)
-    handle = getModsFileName(do)
-    save_path = cliArguments.outputpath
-    filename = os.path.join(save_path, handle + ".xml")
+if os.path.isdir(save_path) != False:
+    for do_uri in do_photo_uris:
+        logging.info('Rendering MODS record for %s' % do_uri)
+        xml = renderRecord(do_uri)
+        do = getDigitalObject(do_uri)
+        handle = getModsFileName(do)
+        filename = os.path.join(save_path, handle + ".xml")
 
-    with open(filename, "w") as fh:
-        logging.info('Writing %s' % filename)
-        fh.write(xml)
+        with open(filename, "w") as fh:
+            logging.info('Writing %s' % filename)
+            fh.write(xml)
+else:
+    logging.info("Directory not found. Please create if not created. Files cannot be written without an existing directory to store them.")
+    exit(1)

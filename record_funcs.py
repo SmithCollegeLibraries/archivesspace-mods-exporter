@@ -30,7 +30,7 @@ def getModsFileName(digital_object):
     logging.info('Returning file name for %s in format: islandora_NUMBER_MODS' % digital_object['digital_object_id'])
     uri = digital_object['file_versions'][0]['file_uri']
     split_uri = uri.split('/')
-    islandora_pid = split_uri[4]
+    islandora_pid = split_uri[-1]
     formatted_islandora_pid = islandora_pid.replace(':', '_')
     mods_file_name = formatted_islandora_pid + '_MODS'
 
@@ -41,7 +41,7 @@ def getSubjects(archival_object):
     ' Returns list of subjects for an Archival Object '
     ' Only looking at Archival Object level -- NOT getting them from the hierarchy because all YWCA AOs with Digital Objects have subjects at the AO level '
     
-    logging.info('Retrieving Subject list from %s' % archival_object)
+    logging.info('Retrieving Subject list from %s' % archival_object['uri'])
     sub_list = []
     subjects = archival_object['subjects']
     for subject in subjects:
@@ -57,7 +57,7 @@ def cleanSubjects(sub_list):
     
     logging.info('Adding full URLs to Subject authority ids if needed')
     for sub in sub_list:
-        logging.info('Checking %s for authority id cleaning' % sub)
+        logging.info('Checking %s for authority id cleaning' % sub['title'])
         if 'authority_id' in sub.keys():
             if sub['source'] == 'tgn' and '.edu' not in sub['authority_id']:
                 sub['authority_id'] = 'http://vocab.getty.edu/tgn/' + sub['authority_id']
@@ -66,18 +66,27 @@ def cleanSubjects(sub_list):
             else:
                 sub['authority_id'] = sub['authority_id']
 
-    return sub_list   
+    return sub_list  
+
+
+def getResource(archival_object):
+    'Get the Resource Record of a given Archival Object'
+
+    logging.info('Retrieving Resource of Archival Object %s' % archival_object['uri'])
+    resource_uri = archival_object['resource']['ref']
+    resource = aspace.get(resource_uri)
+    return resource 
 
 
 def getNotesTree(archival_object):
     ' Returns a list of tuples of all the notes from an Archival Object heirarchy '
     
-    logging.info('Returning list of tuples of all notes from Archival Object %s heirarchy' % archival_object)
+    logging.info('Returning list of tuples of all notes from Archival Object %s heirarchy' % archival_object['uri'])
     note_tups = []
     if 'notes' in archival_object.keys():
         notes = archival_object['notes']
         for note in notes:
-            logging.info('Retrieving available notes from %s' % archival_object)
+            logging.info('Retrieving available notes from %s' % archival_object['uri'])
             if 'content' in note.keys():
                 tup = (note['type'], note['content'])
                 note_tups.append(tup)
@@ -91,7 +100,7 @@ def getNotesTree(archival_object):
             if 'notes' in parent_record.keys():
                 notes = parent_record['notes']
                 for note in notes:
-                    logging.info('Retrieving available notes from parent of %s' % archival_object)
+                    logging.info('Retrieving available notes from parent of %s' % archival_object['uri'])
                     if 'content' in note.keys():
                         tup = (note['type'], note['content'])
                         note_tups.append(tup)
@@ -105,7 +114,7 @@ def getNotesTree(archival_object):
                 if 'notes' in grandparent_record.keys():
                     notes = grandparent_record['notes']
                     for note in notes:
-                        logging.info('Retrieving available notes from grandparent of %s' % archival_object)
+                        logging.info('Retrieving available notes from grandparent of %s' % archival_object['uri'])
                         if 'content' in note.keys():
                             tup = (note['type'], note['content'])
                             note_tups.append(tup)
@@ -117,7 +126,7 @@ def getNotesTree(archival_object):
     if 'notes' in resource.keys():
         notes = resource['notes']
         for note in notes:
-            logging.info('Retrieving available notes from the Resource of %s' % archival_object)
+            logging.info('Retrieving available notes from the Resource of %s' % archival_object['uri'])
             if 'content' in note.keys():
                 tup = (note['type'], note['content'])
                 note_tups.append(tup)

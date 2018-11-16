@@ -6,12 +6,13 @@ import argparse
 import glob
 import os.path
 from record_funcs import *
+from subjectfuncs.py import *
 import logging
 
 CONFIGFILE = "archivesspace.cfg"
 
 argparser = argparse.ArgumentParser()
-argparser.add_argument("outputpath", help="File path for record output.")
+# argparser.add_argument("outputpath", help="File path for record output.")
 argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
 cliArguments = argparser.parse_args()
 
@@ -131,22 +132,6 @@ class AoGeneologyChain(object):
         '''Traverse all parent AOs and save them to a list. Also tack on the
         Resource Record.
         '''
-        # def wrapUp(aoGeneologyChain):
-        #     resource = getResource(archival_object)
-        #     aoGeneologyChain.append(resource)
-        #     return aoGeneologyChain
-        #
-        # aoGeneologyChain = []
-        # for i in range(100):
-        #     aoGeneologyChain.append(archival_object)
-        #     try:
-        #         parentUri = archival_object['parent']['ref']
-        #     except KeyError:
-        #         self.aoGeneologyChain = wrapUp(aoGeneologyChain)
-        #     archival_object = aspace.get(parentUri)
-        # self.aoGeneologyChain = wrapUp(aoGeneologyChain)
-
-        # restructuring
         newGeneologyChain = dict()
         newGeneologyChain['object'] = archival_object
         newGeneologyChain['parents'] = []
@@ -244,14 +229,6 @@ class AoGeneologyChain(object):
         myagents = findAgentsByType(subtypeFieldName, subtype)
         if myagents:
             return myagents
-
-    # def getSubjectsInherited(self, mychain):
-    #     '''Get subject data from either the current Archival Object, its parent
-    #     Archival Objects, or the Resource Record. 'Lazily' i.e. stop as soon as
-    #     I find subjects as I traverse up the geneology chain.
-    #     '''
-    #     subjects = self.lazyFind('subjects')
-    #     return subjects
 
     def getAgentsInherited(self, mychain):
         """Get agents running up the inheritance chain handling them
@@ -351,10 +328,10 @@ def renderRecord(do_uri):
     repository = getRepository(archival_object)
     mychain = AoGeneologyChain(archival_object)
     subjects = getSubjects(archival_object)
-    subjects_cleaned = cleanSubjects(subjects)
+    # subjects_cleaned = cleanSubjects(subjects) [Already done - doesn't need to be run again]
     agents = mychain.getAgentsInherited(mychain)
 
-    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects_cleaned, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
+    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
 
     templateLoader = jinja2.FileSystemLoader(searchpath=".")
     templateEnv = jinja2.Environment(loader=templateLoader)
@@ -375,20 +352,23 @@ ywca_photo_uris = getAllResourceUris(676)
 'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
 do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
 
+for uri in do_photo_uris[:10]:
+    record = renderRecord(uri)
+    print(record)
 'Writing the files'
-save_path = cliArguments.outputpath
+# save_path = cliArguments.outputpath
 
-if os.path.isdir(save_path) != False:
-    for do_uri in do_photo_uris:
-        logging.info('Rendering MODS record for %s' % do_uri)
-        xml = renderRecord(do_uri)
-        do = getDigitalObject(do_uri)
-        handle = getModsFileName(do)
-        filename = os.path.join(save_path, handle + ".xml")
+# if os.path.isdir(save_path) != False:
+#     for do_uri in do_photo_uris[:10]:
+#         logging.info('Rendering MODS record for %s' % do_uri)
+#         xml = renderRecord(do_uri)
+#         do = getDigitalObject(do_uri)
+#         handle = getModsFileName(do)
+#         filename = os.path.join(save_path, handle + ".xml")
 
-        with open(filename, "w") as fh:
-            logging.info('Writing %s' % filename)
-            fh.write(xml)
-else:
-    logging.info("Directory not found. Please create if not created. Files cannot be written without an existing directory to store them.")
-    exit(1)
+#         with open(filename, "w") as fh:
+#             logging.info('Writing %s' % filename)
+#             fh.write(xml)
+# else:
+#     logging.info("Directory not found. Please create if not created. Files cannot be written without an existing directory to store them.")
+#     exit(1)

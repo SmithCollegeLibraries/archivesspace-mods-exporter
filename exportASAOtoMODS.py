@@ -1,18 +1,16 @@
 from archivesspace import archivesspace
 import jinja2
 import pprint
-from utilities import *
 import argparse
 import glob
 import os.path
-from record_funcs import *
-from subjectfuncs.py import *
+import record_funcs
 import logging
 
 CONFIGFILE = "archivesspace.cfg"
 
 argparser = argparse.ArgumentParser()
-# argparser.add_argument("outputpath", help="File path for record output.")
+argparser.add_argument("outputpath", help="File path for record output.")
 argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
 cliArguments = argparser.parse_args()
 
@@ -42,33 +40,27 @@ print("*********")
 def getDigitalObject(do_uri):
     'Get Digital Object from Digital Object URI'
 
-    logging.info('Retrieving Digital Object from Digital Object URI')
+    logging.debug('Retrieving Digital Object from Digital Object URI')
     digital_object = aspace.get(do_uri)
 
     return digital_object
-
-# do_id = digital_object['digital_object_id']
-# do_uri = digital_object['uri']
 
 
 def getArchivalObject(do_uri):
     'Get an Archival Object from a Digital Object URI'
 
-    logging.info('Retrieving Archival Object from Digital Object %s' % do_uri)
+    logging.debug('Retrieving Archival Object from Digital Object %s' % do_uri)
     digital_object = getDigitalObject(do_uri)
     archival_object_uri = digital_object['linked_instances'][0]['ref']
     archival_object = aspace.get(archival_object_uri)
 
     return archival_object
 
-# ao_id = archival_object['ref_id']
-# ao_uri = archival_object['uri']
-
 
 def getShelfLocation(archival_object):
     'Get the Shelf Location of a given Archival Object'
     
-    logging.info('Retrieving Shelf Location of Archival Object %s' % archival_object['uri'])
+    logging.debug('Retrieving Shelf Location of Archival Object %s' % archival_object['uri'])
     try:
         top_container_uri = archival_object['instances'][0]['sub_container']['top_container']['ref']
         top_container = aspace.get(top_container_uri)
@@ -82,7 +74,7 @@ def getShelfLocation(archival_object):
 def getFolder(archival_object):
     ' Gets the folder if there is one of an Archival Object '
 
-    logging.info('Retrieving folder of Archival Object %s' % archival_object['uri'])
+    logging.debug('Retrieving folder of Archival Object %s' % archival_object['uri'])
     try:
         fol = archival_object['instances'][0]['sub_container']['type_2'].capitalize()
         num = archival_object['instances'][0]['sub_container']['indicator_2']
@@ -96,7 +88,7 @@ def getFolder(archival_object):
 def getRepository(archival_object):
     'Get the repository of a given Archival Object'
 
-    logging.info('Retrieving Repository of Archival Object %s' % archival_object['uri'])
+    logging.debug('Retrieving Repository of Archival Object %s' % archival_object['uri'])
     repository_uri = archival_object['repository']['ref']
     repository = aspace.get(repository_uri)
     return repository
@@ -105,7 +97,7 @@ def getRepository(archival_object):
 def getCollectingUnit(archival_object):
     'Get the collecting unit of a given Archival Object'
 
-    logging.info('Retrieving Collecting Unit of Archival Object %s' % archival_object['uri'])
+    logging.debug('Retrieving Collecting Unit of Archival Object %s' % archival_object['uri'])
     repository = getRepository(archival_object)
     collecting_unit = repository['name']
 
@@ -115,8 +107,8 @@ def getCollectingUnit(archival_object):
 def getMsNo(archival_object):
     'Get the MS number of a given Archival Object'
 
-    logging.info('Retrieving MS number of Archival Object %s' % archival_object['uri'])
-    resource = getResource(archival_object)
+    logging.debug('Retrieving MS number of Archival Object %s' % archival_object['uri'])
+    resource = record_funcs.getResource(archival_object)
     try:
         id_1 = resource['id_1']
         id_2 = resource['id_2']
@@ -135,7 +127,7 @@ class AoGeneologyChain(object):
         newGeneologyChain = dict()
         newGeneologyChain['object'] = archival_object
         newGeneologyChain['parents'] = []
-        newGeneologyChain['resource'] = getResource(archival_object)
+        newGeneologyChain['resource'] = record_funcs.getResource(archival_object)
         for i in range(100):
             try:
                 parentUri = archival_object['parent']['ref']
@@ -313,21 +305,22 @@ class AoGeneologyChain(object):
 def renderRecord(do_uri):
     'Call all the functions'
 
-    logging.info('Calling all functions and rendering the MODS records')
+    logging.info('Calling all functions and rendering MODS record')
     digital_object = getDigitalObject(do_uri)
     archival_object = getArchivalObject(do_uri)
     container = getShelfLocation(archival_object)
     folder = getFolder(archival_object)
-    resource = getResource(archival_object)
-    notes = getNotesTree(archival_object)
-    abstract = getNotesByType(notes, 'scopecontent')
-    userestrict = getNotesByType(notes, 'userestrict')
-    accrestrict = getNotesByType(notes, 'accessrestrict')
+    resource = record_funcs.getResource(archival_object)
+    notes = record_funcs.getNotesTree(archival_object)
+    abstract = record_funcs.getNotesByType(notes, 'scopecontent')
+    userestrict = record_funcs.getNotesByType(notes, 'userestrict')
+    accrestrict = record_funcs.getNotesByType(notes, 'accessrestrict')
     collecting_unit = getCollectingUnit(archival_object)
     ms_no = getMsNo(archival_object)
     repository = getRepository(archival_object)
     mychain = AoGeneologyChain(archival_object)
-    subjects = getSubjects(archival_object)
+    subjects = record_funcs.getSubjects(archival_object)
+    # from subjectfuncs.py import *
     # subjects_cleaned = cleanSubjects(subjects) [Already done - doesn't need to be run again]
     agents = mychain.getAgentsInherited(mychain)
 
@@ -347,28 +340,29 @@ def renderRecord(do_uri):
 ' ********************************* '
 
 'Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records'
-ywca_photo_uris = getAllResourceUris(676)
+ywca_photo_uris = record_funcs.getAllResourceUris(676)
 
 'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
-do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
+do_photo_uris = record_funcs.getDigitalObjectUris(ywca_photo_uris)
 
-for uri in do_photo_uris[:10]:
-    record = renderRecord(uri)
-    print(record)
+
 'Writing the files'
-# save_path = cliArguments.outputpath
+save_path = cliArguments.outputpath
 
-# if os.path.isdir(save_path) != False:
-#     for do_uri in do_photo_uris[:10]:
-#         logging.info('Rendering MODS record for %s' % do_uri)
-#         xml = renderRecord(do_uri)
-#         do = getDigitalObject(do_uri)
-#         handle = getModsFileName(do)
-#         filename = os.path.join(save_path, handle + ".xml")
+if os.path.isdir(save_path) != False:
+    for do_uri in do_photo_uris:
+        logging.debug('Rendering MODS record for %s' % do_uri)
+        xml = renderRecord(do_uri)
+        do = getDigitalObject(do_uri)
+        handle = record_funcs.getModsFileName(do)
+        filename = os.path.join(save_path, handle + ".xml")
 
-#         with open(filename, "w") as fh:
-#             logging.info('Writing %s' % filename)
-#             fh.write(xml)
-# else:
-#     logging.info("Directory not found. Please create if not created. Files cannot be written without an existing directory to store them.")
-#     exit(1)
+        with open(filename, "w") as fh:
+            logging.info('Writing %s' % filename)
+            fh.write(xml)
+
+    logging.info('All files written.')        
+
+else:
+    logging.info("Directory not found. Please create if not created. Files cannot be written without an existing directory to store them.")
+    exit(1)

@@ -149,7 +149,7 @@
   <titleInfo>
     <title>{{resource.title}}</title>
   </titleInfo>
-  <identfier>{{ms_no}}</identfier>
+  <identifier>{{ms_no}}</identifier>
 </relatedItem>
 
 <!-- Finding aid -->

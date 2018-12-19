@@ -26,11 +26,15 @@ def getModsFileName(digital_object):
     ' Returns file name in format islandora_NUMBER_MODS '
 
     logging.debug('Returning file name for %s in format: islandora_NUMBER_MODS' % digital_object['digital_object_id'])
-    uri = digital_object['file_versions'][0]['file_uri']
-    split_uri = uri.split('/')
-    islandora_pid = split_uri[-1]
-    formatted_islandora_pid = islandora_pid.replace(':', '_')
-    mods_file_name = formatted_islandora_pid + '_MODS'
+    
+    try:
+        uri = digital_object['file_versions'][0]['file_uri']
+        split_uri = uri.split('/')
+        islandora_pid = split_uri[-1]
+        formatted_islandora_pid = islandora_pid.replace(':', '_')
+        mods_file_name = formatted_islandora_pid + '_MODS'
+    except:
+        mods_file_name = 'did_not_work'
 
     return mods_file_name
 
@@ -47,7 +51,50 @@ def getSubjects(archival_object):
         sub_rec = aspace.get(sub)
         sub_list.append(sub_rec)
 
+    for sub in sub_list:
+        if 'authority_id' in sub.keys():
+            if sub['source'] == 'lcsh':
+                if 'loc.gov' not in sub['authority_id']:
+                    sub['authority_id'] = 'http://id.loc.gov/authorities/subjects/' + sub['authority_id']
+            elif sub['source'] == 'lcnaf':
+                if 'loc.gov' not in sub['authority_id']:
+                    sub['authority_id'] = 'http://id.loc.gov/authorities/names/' + sub['authority_id']
+            elif sub['source'] == 'naf':
+                if 'loc.gov' not in sub['authority_id']:
+                    sub['authority_id'] = 'http://id.loc.gov/authorities/names/' + sub['authority_id']
+            elif sub['source'] == 'tgn':
+                if 'getty.edu' not in sub['authority_id']:
+                    sub['authority_id'] = 'http://vocab.getty.edu/tgn/' + sub['authority_id']
+            elif sub['source'] == 'aat':
+                if 'getty.edu' not in sub['authority_id']:
+                    sub['authority_id'] = 'http://vocab.getty.edu/aat/' + sub['authority_id']
+            else:
+                pass
+        else:
+            pass
+
     return sub_list
+
+
+def getGenreSubjects(subjects, resource):
+
+    genre_subs = []
+    for subject in subjects:
+        if subject['terms'][0]['term_type'] == 'genre_form':
+            genre_subs.append(subject)
+
+    try:        
+        if len(genre_subs) == 0:
+            resource_subjects = getSubjects(resource)
+            for subject in resource_subjects:
+                if subject['terms'][0]['term_type'] == 'genre_form':
+                    genre_subs.append(subject)
+                else: 
+                    pass
+    except:
+        pass
+
+    return genre_subs
 
 
 def getResource(archival_object):

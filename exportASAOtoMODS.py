@@ -237,16 +237,43 @@ class AoGeneologyChain(object):
         agents['creators'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName='linked_agent_roles', subtype='creator')
         agents['donors'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName='linked_agent_roles', subtype='source')
         agents['subjects'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName='linked_agent_roles', subtype='subject')
-#        pprint.pprint(agents)
+        
+        if agents['creators']:
+            for agent in agents['creators']:
+                if agent['jsonmodel_type'] == 'agent_person':
+                    agent['jsonmodel_type'] = 'personal'
+                elif agent['jsonmodel_type'] == 'agent_corporate_entity':
+                    agent['jsonmodel_type'] = 'corporate'
+                else:
+                    pass
 
-        # for agent in agentsAnyType:
-        #     for role in agent['linked_agent_roles']:
-        #         if role == 'creator':
-        #             agents['creators'].append(agent)
-        #         if role == 'source':
-        #             agents['donors'].append(agent)
-        #         if role == 'subject':
-        #             agents['subjects'].append(agent)
+        if agents['donors']:
+            for agent in agents['donors']:
+                if agent['jsonmodel_type'] == 'agent_person':
+                    agent['jsonmodel_type'] = 'personal'
+                elif agent['jsonmodel_type'] == 'agent_corporate_entity':
+                    agent['jsonmodel_type'] = 'corporate'
+                else:
+                    pass
+
+        if agents['subjects']:
+            for agent in agents['subjects']:
+                if agent['jsonmodel_type'] == 'agent_person':
+                    agent['jsonmodel_type'] = 'personal'
+                elif agent['jsonmodel_type'] == 'agent_corporate_entity':
+                    agent['jsonmodel_type'] = 'corporate'
+                else:
+                    pass
+
+                try:
+                    if 'names' in agent.keys():
+                        if 'authority_id' in agent['names'].keys():
+                            if agent['names']['source'] == 'lcsh':
+                                if 'loc.gov' not in agent['names']['authority_id']:
+                                    agent['names']['authority_id'] = 'http://id.loc.gov/authorities/subjects/' + agent['names']['authority_id']
+                except:
+                    pass
+        
         return agents
 
     # def getNotesByType(self, noteType):
@@ -320,11 +347,10 @@ def renderRecord(do_uri):
     repository = getRepository(archival_object)
     mychain = AoGeneologyChain(archival_object)
     subjects = record_funcs.getSubjects(archival_object)
-    # from subjectfuncs.py import *
-    # subjects_cleaned = cleanSubjects(subjects) [Already done - doesn't need to be run again]
+    genre_subs = record_funcs.getGenreSubjects(subjects, resource)
     agents = mychain.getAgentsInherited(mychain)
 
-    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
+    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'genre_subs': genre_subs, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
 
     templateLoader = jinja2.FileSystemLoader(searchpath=".")
     templateEnv = jinja2.Environment(loader=templateLoader)
@@ -355,7 +381,7 @@ if os.path.isdir(save_path) != False:
         xml = renderRecord(do_uri)
         do = getDigitalObject(do_uri)
         handle = record_funcs.getModsFileName(do)
-        filename = os.path.join(save_path, handle + ".xml")
+        filename = os.path.join(handle + ".xml")
 
         with open(filename, "w") as fh:
             logging.info('Writing %s' % filename)

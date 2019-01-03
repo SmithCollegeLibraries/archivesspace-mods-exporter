@@ -265,14 +265,18 @@ class AoGeneologyChain(object):
                 else:
                     pass
 
-                try:
-                    if 'names' in agent.keys():
-                        if 'authority_id' in agent['names'].keys():
-                            if agent['names']['source'] == 'lcsh':
-                                if 'loc.gov' not in agent['names']['authority_id']:
-                                    agent['names']['authority_id'] = 'http://id.loc.gov/authorities/subjects/' + agent['names']['authority_id']
-                except:
-                    pass
+
+                if 'display_name' in agent.keys():
+                    if 'authority_id' in agent['display_name'].keys():
+                        if agent['display_name']['source'] == 'naf':
+                            if 'loc.gov' not in agent['display_name']['authority_id']:
+                                agent['display_name']['authority_id'] = 'http://id.loc.gov/authorities/names/' + agent['display_name']['authority_id']
+                        elif agent['display_name']['source'] == 'lcsh':
+                            agent['display_name']['authority_id'] = 'http://id.loc.gov/authorities/subjects/' + agent['display_name']['authority_id']
+                        elif agent['display_name']['source'] == 'tgn':
+                            agent['display_name']['authority_id'] = 'http://vocab.getty.edu/tgn/' + agent['display_name']['authority_id']
+                        elif agent ['display_name']['source'] == 'aat':
+                            agent['display_name']['authority_id'] = 'http://vocab.getty.edu/aat/' + agent['display_name']['authority_id']
         
         return agents
 
@@ -381,7 +385,7 @@ if os.path.isdir(save_path) != False:
         xml = renderRecord(do_uri)
         do = getDigitalObject(do_uri)
         handle = record_funcs.getModsFileName(do)
-        filename = os.path.join(handle + ".xml")
+        filename = os.path.join(save_path, handle + ".xml")
 
         with open(filename, "w") as fh:
             logging.info('Writing %s' % filename)

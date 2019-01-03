@@ -111,7 +111,7 @@
 </abstract>
 {%- endif %}
 
-<!-- Language of materials -->
+<!-- Language of materials 
 {%- if resource.language == 'eng' %}
 <language>
   <languageTerm>English</languageTerm>
@@ -120,6 +120,14 @@
 <language>
   <languageTerm>{{resource.language}}</languageTerm>
 </language>
+{%- endif %} -->
+
+{%- if langs %}
+{%- for lang in langs %}
+<language>
+  <languageTerm>{{lang}}</languageTerm>
+</language>
+{%- endfor %}
 {%- endif %}
 
 <!-- Scope and content -->

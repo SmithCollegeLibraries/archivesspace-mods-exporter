@@ -346,6 +346,7 @@ def renderRecord(do_uri):
     abstract = record_funcs.getNotesByType(notes, 'scopecontent')
     userestrict = record_funcs.getNotesByType(notes, 'userestrict')
     accrestrict = record_funcs.getNotesByType(notes, 'accessrestrict')
+    langs = record_funcs.getLangAtAOLevel(archival_object)
     collecting_unit = getCollectingUnit(archival_object)
     ms_no = getMsNo(archival_object)
     repository = getRepository(archival_object)
@@ -354,7 +355,7 @@ def renderRecord(do_uri):
     genre_subs = record_funcs.getGenreSubjects(subjects, resource)
     agents = mychain.getAgentsInherited(mychain)
 
-    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects, 'genre_subs': genre_subs, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
+    data = {'archival_object': archival_object, 'resource': resource, 'langs': langs, 'repository': repository, 'subjects': subjects, 'genre_subs': genre_subs, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
 
     templateLoader = jinja2.FileSystemLoader(searchpath=".")
     templateEnv = jinja2.Environment(loader=templateLoader)

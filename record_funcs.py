@@ -185,6 +185,25 @@ def getNotesByType(note_tups, notetype):
             return note[1]
 
 
+def getLangAtAOLevel(archival_object):
+    obj_langs = []
+    note_tups = getNotesTree(archival_object)
+    lang_notes = getNotesByType(note_tups, 'langmaterial')
+    try:
+        for lang in lang_notes:
+            langs = lang.split(';')
+            for lang in langs:
+                if lang == 'The primary language of the materials is English.':
+                    lang = 'English'
+                    obj_langs.append(lang)
+                else:
+                    obj_langs.append(lang)
+    except:
+        pass
+
+    return obj_langs
+
+
 def getSeries(resource_num):
     ' Returns first level down children of given resource '
 

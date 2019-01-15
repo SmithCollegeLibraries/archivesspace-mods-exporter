@@ -376,10 +376,7 @@ def renderRecord(do_uri):
 ' ********************************* '
 
 'Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records'
-ywca_photo_uris = record_funcs.getAllResourceUris(676) #676
-
 ywca_photo_uris = myrecordfuncs.getAllResourceUris(cliArguments.RESOURCERECORDID)
-
 
 'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
 do_photo_uris = myrecordfuncs.getDigitalObjectUris(ywca_photo_uris)

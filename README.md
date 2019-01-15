@@ -72,6 +72,7 @@ Next steps:
 - wiki rules text wrong. last sentence.
 
 ## Generating JSON file for digitalobjecturiadd.py
+#### This is used to add the Compass URI to the corresponding ArchivesSpace digital object record. The Compass URI is necessary in order to generate the proper file name for the XML exporter.
 
 1. Log into VPN
 2. Go to the SOLR admin panel: http://compass-fedora-prod.fivecolleges.edu:8080/solr/#/

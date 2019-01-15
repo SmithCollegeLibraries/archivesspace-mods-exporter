@@ -11,12 +11,15 @@ CONFIGFILE = "archivesspace.cfg"
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("outputpath", help="File path for record output.")
-argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
+argparser.add_argument("RESOURCERECORDID", type=int, help="ID of top level resource record to get digital objects from. (example: 676)")
+argparser.add_argument("SERVERCFG", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
 cliArguments = argparser.parse_args()
 
 aspace = archivesspace.ArchivesSpace()
 aspace.setServerCfg(CONFIGFILE, section=cliArguments.SERVERCFG)
 aspace.connect()
+
+myrecordfuncs = record_funcs.aspaceRecordFuncs(aspace)
 
 """
 Query ArchivesSpace API for details about an Archival Object and format the
@@ -108,7 +111,7 @@ def getMsNo(archival_object):
     'Get the MS number of a given Archival Object'
 
     logging.debug('Retrieving MS number of Archival Object %s' % archival_object['uri'])
-    resource = record_funcs.getResource(archival_object)
+    resource = myrecordfuncs.getResource(archival_object)
     try:
         id_1 = resource['id_1']
         id_2 = resource['id_2']
@@ -127,7 +130,7 @@ class AoGeneologyChain(object):
         newGeneologyChain = dict()
         newGeneologyChain['object'] = archival_object
         newGeneologyChain['parents'] = []
-        newGeneologyChain['resource'] = record_funcs.getResource(archival_object)
+        newGeneologyChain['resource'] = myrecordfuncs.getResource(archival_object)
         for i in range(100):
             try:
                 parentUri = archival_object['parent']['ref']
@@ -341,18 +344,18 @@ def renderRecord(do_uri):
     archival_object = archival_object
     container = getShelfLocation(archival_object)
     folder = getFolder(archival_object)
-    resource = record_funcs.getResource(archival_object)
-    notes = record_funcs.getNotesTree(archival_object)
-    abstract = record_funcs.getNotesByType(notes, 'scopecontent')
-    userestrict = record_funcs.getNotesByType(notes, 'userestrict')
-    accrestrict = record_funcs.getNotesByType(notes, 'accessrestrict')
-    langs = record_funcs.getLangAtAOLevel(archival_object)
+    resource = myrecordfuncs.getResource(archival_object)
+    notes = myrecordfuncs.getNotesTree(archival_object)
+    abstract = myrecordfuncs.getNotesByType(notes, 'scopecontent')
+    userestrict = myrecordfuncs.getNotesByType(notes, 'userestrict')
+    accrestrict = myrecordfuncs.getNotesByType(notes, 'accessrestrict')
+    langs = myrecordfuncs.getLangAtAOLevel(archival_object)
     collecting_unit = getCollectingUnit(archival_object)
     ms_no = getMsNo(archival_object)
     repository = getRepository(archival_object)
     mychain = AoGeneologyChain(archival_object)
-    subjects = record_funcs.getSubjects(archival_object)
-    genre_subs = record_funcs.getGenreSubjects(subjects, resource)
+    subjects = myrecordfuncs.getSubjects(archival_object)
+    genre_subs = myrecordfuncs.getGenreSubjects(subjects, resource)
     agents = mychain.getAgentsInherited(mychain)
 
     data = {'archival_object': archival_object, 'resource': resource, 'langs': langs, 'repository': repository, 'subjects': subjects, 'genre_subs': genre_subs, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
@@ -366,6 +369,8 @@ def renderRecord(do_uri):
     return template.render(data)
 
 
+
+
 ' ********************************* '
 ' ***** Calling the functions ***** '
 ' ********************************* '
@@ -373,8 +378,11 @@ def renderRecord(do_uri):
 'Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records'
 ywca_photo_uris = record_funcs.getAllResourceUris(676) #676
 
+ywca_photo_uris = myrecordfuncs.getAllResourceUris(cliArguments.RESOURCERECORDID)
+
+
 'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
-do_photo_uris = record_funcs.getDigitalObjectUris(ywca_photo_uris)
+do_photo_uris = myrecordfuncs.getDigitalObjectUris(ywca_photo_uris)
 
 
 'Writing the files'
@@ -385,7 +393,7 @@ if os.path.isdir(save_path) != False:
         logging.debug('Rendering MODS record for %s' % do_uri)
         xml = renderRecord(do_uri)
         do = getDigitalObject(do_uri)
-        handle = record_funcs.getModsFileName(do)
+        handle = myrecordfuncs.getModsFileName(do)
         filename = os.path.join(save_path, handle + ".xml")
 
         with open(filename, "w") as fh:

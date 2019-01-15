@@ -332,13 +332,13 @@ class AoGeneologyChain(object):
 # except KeyError:
 #     pass
 
-
 def renderRecord(do_uri):
     'Call all the functions'
 
     logging.info('Calling all functions and rendering MODS record')
     digital_object = getDigitalObject(do_uri)
     archival_object = getArchivalObject(do_uri)
+    archival_object = archival_object
     container = getShelfLocation(archival_object)
     folder = getFolder(archival_object)
     resource = record_funcs.getResource(archival_object)
@@ -371,7 +371,7 @@ def renderRecord(do_uri):
 ' ********************************* '
 
 'Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records'
-ywca_photo_uris = record_funcs.getAllResourceUris(676)
+ywca_photo_uris = record_funcs.getAllResourceUris(676) #676
 
 'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
 do_photo_uris = record_funcs.getDigitalObjectUris(ywca_photo_uris)

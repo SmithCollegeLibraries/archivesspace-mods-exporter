@@ -43,9 +43,10 @@ for ob in ywca_compass_objects:
 # ywca_compass_objects now contains full Compass URIs for every Compass object
 
 # Strips identifier to the numeric string needed for the API endpoint
+# e.g. "smith_ssc_324_digital_object_289" to "289"
 for ob in ywca_compass_objects:
 	do_id = ob['mods_identifier_local_s']
-	ob['mods_identifier_local_s'] = do_id[-3:]
+	ob['mods_identifier_local_s'] = do_id.split('_')[-1]
 # ywca_compass_objects['mods_identifier_local_s'] now contains only the ASpace object id necessary to run API calls 
 
 ##-------------------------------- ##
@@ -58,7 +59,6 @@ def updateDOwithCompassURI(ywca_compass_object):
 	digital_object = aspace.get('/repositories/2/digital_objects/' + do_id)
 	# Gets the Compass URI and builds the data dictionary necessary for the API call to update the digital object record
 	compass_uri = ywca_compass_object['PID']
-	digital_object['file_versions'] = []
 	uri_key = {'file_uri': compass_uri}
 	digital_object['file_versions'].append(uri_key)
 	# Updates digital object records with the file URIs
@@ -71,24 +71,3 @@ def updateDOwithCompassURI(ywca_compass_object):
 
 for compass_ob in ywca_compass_objects:
 	print(updateDOwithCompassURI(compass_ob))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

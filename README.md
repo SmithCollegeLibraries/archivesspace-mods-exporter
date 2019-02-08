@@ -1,5 +1,90 @@
 # About
+
+Tools for syncing metadata from ArchivesSpace to Islandora.
+
+## Mapping
+https://github.com/smith-special-collections/sc-documentation/wiki/Mapping-archival-and-bibliographic-metadata-schemas-to-Compass-MODS
+
+## Description inheritance logic
+https://github.com/smith-special-collections/sc-documentation/wiki/Rules-for-description-inheritance-for-digital-object-records
+
+# Set up
+## Requirements
+```
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+```
+
+Hence forth before using these tools you should execute `source venv/bin/activate` to enable the python virtual environment.
+
+### Install archivesspace Python module
+```
+git clone https://github.com/SmithCollegeLibraries/archivesspace-python.git
+mv archivesspace-python archivesspace
+cd archivesspace
+git checkout v0.0.4 # At the time of writing. This version may change! TODO: Keep this updated
+```
+
+## Configure `archivesspace.cfg`
+Copy `archivesspace-example.cfg` to `archivesspace.cfg` then edit the file to reflect your environment and account credentials.
+
 # Usage
+## Use `digitalobjecturiadd.py` to add URLs to your digital objects in ArchivesSpace
+
+```
+python3 digitalobjecturiadd.py --help
+python3 digitalobjecturiadd.py newphotopids.json test
+```
+
+### Generating JSON file for digitalobjecturiadd.py
+This is used to add the Islandora URI as a File Version to the corresponding ArchivesSpace digital object record. The Islandora URI is necessary in order to generate the proper file name for the XML exporter.
+
+1. Log into VPN
+2. Go to the SOLR admin panel: http://compass-fedora-prod.fivecolleges.edu:8080/solr/#/
+3. Enter desired query, such as:
+- q: RELS_EXT_isMemberOfCollection_uri_t:"smith\:ssc--ms0324rg9" fl: PID, mods_identifier_local_s, mods_titleInfo_title_s (this one retrieves the PID, local id, and title for all digital objects in the YWCA U.S.A photographic collection)
+4. Set wt field to ‘json’
+5. To save JSON file: 
+- In the command line, write: curl “URL of JSON output” > filename.json
+
+## Use `exportASAOtoMODS.py` to export the metadata from those records into MODS.xml files
+
+```
+python3 exportASAOtoMODS.py --help
+mkdir myoutputdir
+python3 exportASAOtoMODS.py myoutputdir 676 test
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# \/ SCRATCH SPACE \/
 
 # Acceptance Criteria
 - Does the script generate a valid MODS XML file?
@@ -24,12 +109,6 @@
 [ ] or Turn into module that can be used by a processing script
 [ ] Save to a file?
 [ ] Sample data importer so I can write doctests
-
-# Mapping
-https://github.com/smith-special-collections/sc-documentation/wiki/Mapping-archival-and-bibliographic-metadata-schemas-to-Compass-MODS
-
-# Description inheritance logic
-https://github.com/smith-special-collections/sc-documentation/wiki/Rules-for-description-inheritance-for-digital-object-records
 
 # Test plan
 ## Setup
@@ -64,8 +143,7 @@ does the output XML contain only subjects with the subject names from the digita
 ## Teardown
 ...
 
-# Scratch
-Next steps:
+# Old Next steps:
 - Creators: Leslie missing
 - Donors: Margaret is showing
 - wiki rules text wrong. last sentence.

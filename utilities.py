@@ -1,4 +1,3 @@
-import yaml
 import pprint
 """Utility functions for debugging"""
 

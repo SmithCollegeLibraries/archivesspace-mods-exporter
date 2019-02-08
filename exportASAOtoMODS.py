@@ -1,23 +1,25 @@
 from archivesspace import archivesspace
 import jinja2
 import pprint
-from utilities import *
 import argparse
 import glob
 import os.path
-from record_funcs import *
+import record_funcs
 import logging
 
 CONFIGFILE = "archivesspace.cfg"
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("outputpath", help="File path for record output.")
-argparser.add_argument("SERVERCFG", nargs="?", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
+argparser.add_argument("RESOURCERECORDID", type=int, help="ID of top level resource record to get digital objects from. (example: 676)")
+argparser.add_argument("SERVERCFG", default="DEFAULT", help="Name of the server configuration section e.g. 'production' or 'testing'. Edit archivesspace.cfg to add a server configuration section. If no configuration is specified, the default settings will be used host=localhost user=admin pass=admin.")
 cliArguments = argparser.parse_args()
 
 aspace = archivesspace.ArchivesSpace()
 aspace.setServerCfg(CONFIGFILE, section=cliArguments.SERVERCFG)
 aspace.connect()
+
+myrecordfuncs = record_funcs.aspaceRecordFuncs(aspace)
 
 """
 Query ArchivesSpace API for details about an Archival Object and format the
@@ -31,6 +33,8 @@ Concepts:
 
 """
 
+logging.basicConfig(level=logging.INFO)
+
 NOTETYPESURI = '/config/enumerations/45'
 
 print("*********")
@@ -38,29 +42,28 @@ print("*********")
 
 def getDigitalObject(do_uri):
     'Get Digital Object from Digital Object URI'
+
+    logging.debug('Retrieving Digital Object from Digital Object URI')
     digital_object = aspace.get(do_uri)
 
     return digital_object
 
-# do_id = digital_object['digital_object_id']
-# do_uri = digital_object['uri']
-
 
 def getArchivalObject(do_uri):
-    'Get an Archival Object Record from a Digital Object URI'
+    'Get an Archival Object from a Digital Object URI'
+
+    logging.debug('Retrieving Archival Object from Digital Object %s' % do_uri)
     digital_object = getDigitalObject(do_uri)
     archival_object_uri = digital_object['linked_instances'][0]['ref']
     archival_object = aspace.get(archival_object_uri)
 
     return archival_object
 
-# ao_id = archival_object['ref_id']
-# ao_uri = archival_object['uri']
-
 
 def getShelfLocation(archival_object):
     'Get the Shelf Location of a given Archival Object'
-    # top_container_title = ""
+    
+    logging.debug('Retrieving Shelf Location of Archival Object %s' % archival_object['uri'])
     try:
         top_container_uri = archival_object['instances'][0]['sub_container']['top_container']['ref']
         top_container = aspace.get(top_container_uri)
@@ -74,6 +77,7 @@ def getShelfLocation(archival_object):
 def getFolder(archival_object):
     ' Gets the folder if there is one of an Archival Object '
 
+    logging.debug('Retrieving folder of Archival Object %s' % archival_object['uri'])
     try:
         fol = archival_object['instances'][0]['sub_container']['type_2'].capitalize()
         num = archival_object['instances'][0]['sub_container']['indicator_2']
@@ -84,15 +88,10 @@ def getFolder(archival_object):
     return folder
 
 
-def getResource(archival_object):
-    'Get the Resource Record of a given Archival Object'
-    resource_uri = archival_object['resource']['ref']
-    resource = aspace.get(resource_uri)
-    return resource
-
-
 def getRepository(archival_object):
     'Get the repository of a given Archival Object'
+
+    logging.debug('Retrieving Repository of Archival Object %s' % archival_object['uri'])
     repository_uri = archival_object['repository']['ref']
     repository = aspace.get(repository_uri)
     return repository
@@ -100,6 +99,8 @@ def getRepository(archival_object):
 
 def getCollectingUnit(archival_object):
     'Get the collecting unit of a given Archival Object'
+
+    logging.debug('Retrieving Collecting Unit of Archival Object %s' % archival_object['uri'])
     repository = getRepository(archival_object)
     collecting_unit = repository['name']
 
@@ -108,7 +109,9 @@ def getCollectingUnit(archival_object):
 
 def getMsNo(archival_object):
     'Get the MS number of a given Archival Object'
-    resource = getResource(archival_object)
+
+    logging.debug('Retrieving MS number of Archival Object %s' % archival_object['uri'])
+    resource = myrecordfuncs.getResource(archival_object)
     try:
         id_1 = resource['id_1']
         id_2 = resource['id_2']
@@ -124,26 +127,10 @@ class AoGeneologyChain(object):
         '''Traverse all parent AOs and save them to a list. Also tack on the
         Resource Record.
         '''
-        # def wrapUp(aoGeneologyChain):
-        #     resource = getResource(archival_object)
-        #     aoGeneologyChain.append(resource)
-        #     return aoGeneologyChain
-        #
-        # aoGeneologyChain = []
-        # for i in range(100):
-        #     aoGeneologyChain.append(archival_object)
-        #     try:
-        #         parentUri = archival_object['parent']['ref']
-        #     except KeyError:
-        #         self.aoGeneologyChain = wrapUp(aoGeneologyChain)
-        #     archival_object = aspace.get(parentUri)
-        # self.aoGeneologyChain = wrapUp(aoGeneologyChain)
-
-        # restructuring
         newGeneologyChain = dict()
         newGeneologyChain['object'] = archival_object
         newGeneologyChain['parents'] = []
-        newGeneologyChain['resource'] = getResource(archival_object)
+        newGeneologyChain['resource'] = myrecordfuncs.getResource(archival_object)
         for i in range(100):
             try:
                 parentUri = archival_object['parent']['ref']
@@ -238,14 +225,6 @@ class AoGeneologyChain(object):
         if myagents:
             return myagents
 
-    # def getSubjectsInherited(self, mychain):
-    #     '''Get subject data from either the current Archival Object, its parent
-    #     Archival Objects, or the Resource Record. 'Lazily' i.e. stop as soon as
-    #     I find subjects as I traverse up the geneology chain.
-    #     '''
-    #     subjects = self.lazyFind('subjects')
-    #     return subjects
-
     def getAgentsInherited(self, mychain):
         """Get agents running up the inheritance chain handling them
         independently by type: creator, source, subject.
@@ -261,16 +240,47 @@ class AoGeneologyChain(object):
         agents['creators'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName='linked_agent_roles', subtype='creator')
         agents['donors'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName='linked_agent_roles', subtype='source')
         agents['subjects'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName='linked_agent_roles', subtype='subject')
-#        pprint.pprint(agents)
+        
+        if agents['creators']:
+            for agent in agents['creators']:
+                if agent['jsonmodel_type'] == 'agent_person':
+                    agent['jsonmodel_type'] = 'personal'
+                elif agent['jsonmodel_type'] == 'agent_corporate_entity':
+                    agent['jsonmodel_type'] = 'corporate'
+                else:
+                    pass
 
-        # for agent in agentsAnyType:
-        #     for role in agent['linked_agent_roles']:
-        #         if role == 'creator':
-        #             agents['creators'].append(agent)
-        #         if role == 'source':
-        #             agents['donors'].append(agent)
-        #         if role == 'subject':
-        #             agents['subjects'].append(agent)
+        if agents['donors']:
+            for agent in agents['donors']:
+                if agent['jsonmodel_type'] == 'agent_person':
+                    agent['jsonmodel_type'] = 'personal'
+                elif agent['jsonmodel_type'] == 'agent_corporate_entity':
+                    agent['jsonmodel_type'] = 'corporate'
+                else:
+                    pass
+
+        if agents['subjects']:
+            for agent in agents['subjects']:
+                if agent['jsonmodel_type'] == 'agent_person':
+                    agent['jsonmodel_type'] = 'personal'
+                elif agent['jsonmodel_type'] == 'agent_corporate_entity':
+                    agent['jsonmodel_type'] = 'corporate'
+                else:
+                    pass
+
+
+                if 'display_name' in agent.keys():
+                    if 'authority_id' in agent['display_name'].keys():
+                        if agent['display_name']['source'] == 'naf':
+                            if 'loc.gov' not in agent['display_name']['authority_id']:
+                                agent['display_name']['authority_id'] = 'http://id.loc.gov/authorities/names/' + agent['display_name']['authority_id']
+                        elif agent['display_name']['source'] == 'lcsh':
+                            agent['display_name']['authority_id'] = 'http://id.loc.gov/authorities/subjects/' + agent['display_name']['authority_id']
+                        elif agent['display_name']['source'] == 'tgn':
+                            agent['display_name']['authority_id'] = 'http://vocab.getty.edu/tgn/' + agent['display_name']['authority_id']
+                        elif agent ['display_name']['source'] == 'aat':
+                            agent['display_name']['authority_id'] = 'http://vocab.getty.edu/aat/' + agent['display_name']['authority_id']
+        
         return agents
 
     # def getNotesByType(self, noteType):
@@ -328,24 +338,27 @@ class AoGeneologyChain(object):
 
 def renderRecord(do_uri):
     'Call all the functions'
+
+    logging.info('Calling all functions and rendering MODS record')
     digital_object = getDigitalObject(do_uri)
     archival_object = getArchivalObject(do_uri)
     container = getShelfLocation(archival_object)
     folder = getFolder(archival_object)
-    resource = getResource(archival_object)
-    notes = getNotesTree(archival_object)
-    abstract = getNotesByType(notes, 'scopecontent')
-    userestrict = getNotesByType(notes, 'userestrict')
-    accrestrict = getNotesByType(notes, 'accessrestrict')
+    resource = myrecordfuncs.getResource(archival_object)
+    notes = myrecordfuncs.getNotesTree(archival_object)
+    abstract = myrecordfuncs.getNotesByType(notes, 'scopecontent')
+    userestrict = myrecordfuncs.getNotesByType(notes, 'userestrict')
+    accrestrict = myrecordfuncs.getNotesByType(notes, 'accessrestrict')
+    langs = myrecordfuncs.getLangAtAOLevel(archival_object)
     collecting_unit = getCollectingUnit(archival_object)
     ms_no = getMsNo(archival_object)
     repository = getRepository(archival_object)
     mychain = AoGeneologyChain(archival_object)
-    subjects = getSubjects(archival_object)
-    subjects_cleaned = cleanSubjects(subjects)
+    subjects = myrecordfuncs.getSubjects(archival_object)
+    genre_subs = myrecordfuncs.getGenreSubjects(subjects, resource)
     agents = mychain.getAgentsInherited(mychain)
 
-    data = {'archival_object': archival_object, 'resource': resource, 'repository': repository, 'subjects': subjects_cleaned, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
+    data = {'archival_object': archival_object, 'resource': resource, 'langs': langs, 'repository': repository, 'subjects': subjects, 'genre_subs': genre_subs, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
 
     templateLoader = jinja2.FileSystemLoader(searchpath=".")
     templateEnv = jinja2.Environment(loader=templateLoader)
@@ -356,37 +369,36 @@ def renderRecord(do_uri):
     return template.render(data)
 
 
+
+
 ' ********************************* '
 ' ***** Calling the functions ***** '
 ' ********************************* '
 
 'Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records'
-ywca_photo_uris = getAllResourceUris(676)
+ywca_photo_uris = myrecordfuncs.getAllResourceUris(cliArguments.RESOURCERECORDID)
 
 'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
-do_photo_uris = getDigitalObjectUris(ywca_photo_uris)
+do_photo_uris = myrecordfuncs.getDigitalObjectUris(ywca_photo_uris)
 
-# sample = getSlice(do_photo_uris, 10)
-
-# count = 0
-# for x in sample:
-#     count += 1
-#     print(count)
-#     record = renderRecord(x)
-#     print(record)
 
 'Writing the files'
-count = 0
-for do_uri in do_photo_uris:
-    count += 1
-    print(count)
+save_path = cliArguments.outputpath
 
-    xml = renderRecord(do_uri)
-    do = getDigitalObject(do_uri)
-    handle = do['digital_object_id']
-    save_path = cliArguments.outputpath
-    filename = os.path.join(save_path, handle + ".xml")
+if os.path.isdir(save_path) != False:
+    for do_uri in do_photo_uris:
+        logging.debug('Rendering MODS record for %s' % do_uri)
+        xml = renderRecord(do_uri)
+        do = getDigitalObject(do_uri)
+        handle = myrecordfuncs.getModsFileName(do)
+        filename = os.path.join(save_path, handle + ".xml")
 
-    with open(filename, "w") as fh:
-        logging.info('Writing %s' % filename)
-        fh.write(xml)
+        with open(filename, "w") as fh:
+            logging.info('Writing %s' % filename)
+            fh.write(xml)
+
+    logging.info('All files written.')        
+
+else:
+    logging.info("Directory not found. Please create if not created. Files cannot be written without an existing directory to store them.")
+    exit(1)

@@ -1,2 +1,3 @@
 requests==2.21.0
 Jinja2==2.10
+xmldiff==2.2

@@ -1,9 +1,7 @@
-description = """Scan directory of Islandora CRUD formated files and check them
-against the currently ingested datastreams in Islandora.
-Current version only suitable for small files like MODS files that are easy
-to hold in memory. Could be easily revised to handle large files using hashes.
+description = """Scan directory of MODS files with Islandora CRUD formated names
+and check them against the currently ingested datastreams in Islandora.
 
-If the datastreams to be compared have restricted access you will need to log
+NOTE: If the datastreams to be compared have restricted access you will need to log
 into Islandora and save your cookies to a file using a tool like this one:
 https://chrome.google.com/webstore/detail/cookiestxt/njabckikapfpffapmjgojcnbfjonfjfg?hl=en
 Then use --cookie-file= to point to the cookie file.
@@ -13,11 +11,12 @@ import os
 import re
 import requests
 import string
-# import hashlib # Ended up not using checksums
-import logging
 import argparse
+import logging
 
-logging.basicConfig(level=logging.WARNING)
+import xmlisequal # custom, in the current dir
+
+logging.basicConfig(level=logging.INFO)
 
 argparser = argparse.ArgumentParser(description=description)
 argparser.add_argument('inputdir', help="A directory full of CRUD name format files ready to be ingested.")
@@ -98,7 +97,7 @@ def getDifferences(datastreams):
         if datastream['contents_local'] is not None and \
         datastream['contents_remote'] is not None:
             logging.debug("Local and remote contents exist")
-            if datastream['contents_local'] != datastream['contents_remote']:
+            if not xmlisequal.xmlIsEqual(datastream['contents_remote'], datastream['contents_local'], pid=pid):
                 logging.debug("Local and remote instances do not match for %s adding to list to be synced!" % datastream['filepathname'])
                 differences.append(pid)
             else:

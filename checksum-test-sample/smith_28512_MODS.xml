@@ -1,0 +1,60 @@
+
+<mods:mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <mods:titleInfo>
+    <mods:title>American Committee minutes, reports and conference proceedings, 1886-1906</mods:title>
+    <mods:subTitle></mods:subTitle>
+  </mods:titleInfo>
+  <mods:name type="personal">
+    <mods:namePart></mods:namePart>
+    <mods:role>
+      <mods:roleTerm authority="marcrelator" type="text"></mods:roleTerm>
+    </mods:role>
+  </mods:name>
+  <mods:typeOfResource>text</mods:typeOfResource>
+  <mods:genre authority="marcgt">proceedings; minutes (administrative records); reports; microfilms</mods:genre>
+  <mods:tableOfContents></mods:tableOfContents>
+  <mods:originInfo>
+    <mods:dateIssued></mods:dateIssued>
+    <mods:copyrightDate></mods:copyrightDate>
+    <mods:issuance>monographic</mods:issuance>
+    <mods:edition></mods:edition>
+    <mods:publisher></mods:publisher>
+    <mods:place>
+      <mods:placeTerm authority="marccountry"></mods:placeTerm>
+    </mods:place>
+    <mods:place>
+      <mods:placeTerm type="text"></mods:placeTerm>
+    </mods:place>
+  </mods:originInfo>
+  <mods:language>
+    <mods:languageTerm authority="iso639-2b" type="code">English</mods:languageTerm>
+  </mods:language>
+  <mods:abstract></mods:abstract>
+  <mods:identifier type="isbn"></mods:identifier>
+  <mods:physicalDescription>
+    <mods:form authority="marcform">1 partial reel</mods:form>
+    <mods:extent>1420 frames</mods:extent>
+  </mods:physicalDescription>
+  <mods:note type="statement of responsibility"></mods:note>
+  <mods:note></mods:note>
+  <mods:subject>
+    <mods:topic>Congresses and conventions; leadership in women; women--religious life</mods:topic>
+    <mods:geographic></mods:geographic>
+    <mods:temporal></mods:temporal>
+    <mods:hierarchicalGeographic>
+      <mods:continent></mods:continent>
+      <mods:country></mods:country>
+      <mods:province></mods:province>
+      <mods:region></mods:region>
+      <mods:county></mods:county>
+      <mods:city></mods:city>
+      <mods:citySection></mods:citySection>
+    </mods:hierarchicalGeographic>
+    <mods:cartographics>
+      <mods:coordinates></mods:coordinates>
+    </mods:cartographics>
+    <mods:topic></mods:topic>
+  </mods:subject>
+  <mods:classification authority="lcc"></mods:classification>
+  <mods:classification authority="ddc" edition="21"></mods:classification>
+</mods:mods>

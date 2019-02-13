@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mods xmlns="http://www.loc.gov/mods/v3"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:xlink="http://www.w3.org/1999/xlink"
+      xmlns:mods="http://www.loc.gov/mods/v3"
+      xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd">
+
+<!-- Title -->
+<titleInfo>
+  <title>State Committee programs and reports</title>
+</titleInfo>
+
+<!-- Date -->
+<originInfo>
+  <dateCreated keyDate="yes">1884-1919</dateCreated>
+  <dateValid encoding="iso8601" point="start">1884</dateValid>
+  <dateValid encoding="iso8601" point="end">1919</dateValid>
+</originInfo>
+
+<!-- Repository name -->
+<name>
+  <namePart>Sophia Smith Collection</namePart>
+  <role><roleTerm authority="local" type="text">Unit</roleTerm></role>
+</name>
+
+<!-- Extent -->
+<physicalDescription>
+  <extent>3331 frames</extent>
+  <extent>1 partial reel</extent>
+</physicalDescription>
+
+<!-- Genres -->
+<genre authority="aat">programs (documents)</genre>
+<genre authority="aat">proceedings</genre>
+<genre authority="aat">minutes (administrative records)</genre>
+<genre authority="aat">yearbooks</genre>
+<genre authority="aat">microfilms</genre>
+
+<!-- Subjects -->
+<subject authority="aat" valueURI="http://vocab.getty.edu/aat/300027240">
+</subject>
+<subject authority="aat" valueURI="http://vocab.getty.edu/aat/300027316">
+</subject>
+<subject authority="aat" valueURI="http://vocab.getty.edu/aat/300027440">
+</subject>
+<subject authority="aat" valueURI="http://vocab.getty.edu/aat/300026646">
+</subject>
+<subject authority="aat" valueURI="http://vocab.getty.edu/aat/300028598">
+</subject>
+<subject authority="local-lcsh-cx" valueURI="tsbj_tmp_0000186">
+        <topic>Nonprofit organizations</topic>
+        <topic>Administration</topic>
+</subject>
+<subject authority="local-lcsh-cx" valueURI="tsbj_tmp_0000072">
+        <topic>Clubs</topic>
+        <topic>Recruiting</topic>
+</subject>
+<subject authority="lcsh" valueURI="http://id.loc.gov/authorities/subjects/sh95002242">
+        <topic>Nonprofit organizations</topic>
+        <topic>Finance</topic>
+</subject>
+<subject authority="lcsh" valueURI="http://id.loc.gov/authorities/subjects/sh95010485">
+        <topic>Leadership in women</topic>
+</subject>
+<subject authority="lcsh" valueURI="http://id.loc.gov/authorities/subjects/sh2008108402">
+        <topic>Nonprofit organizations</topic>
+        <topic>Management</topic>
+</subject>
+<subject authority="lcsh" valueURI="http://id.loc.gov/authorities/subjects/sh85025042">
+        <topic>Christian education</topic>
+</subject>
+<subject authority="lcsh" valueURI="http://id.loc.gov/authorities/subjects/sh85037397">
+        <topic>Devotional exercises</topic>
+</subject>
+<subject authority="local-lcsh-cx" valueURI="tsbj_tmp_0000557">
+        <topic>Women</topic>
+        <geographic>United States</geographic>
+        <topic>Societies and clubs</topic>
+        <topic>History</topic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007919">
+        <geographic>Virginia, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7013961">
+        <geographic>West Virginia, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007826">
+        <geographic>Texas, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007825">
+        <geographic>Tennessee, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007255">
+        <geographic>Kentucky, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007713">
+        <geographic>South Dakota, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007516">
+        <geographic>Maryland, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007710">
+        <geographic>Pennsylvania, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007706">
+        <geographic>Ohio, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007705">
+        <geographic>North Dakota, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007709">
+        <geographic> North Carolina, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007712">
+        <geographic>South Carolina, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007568">
+        <geographic>New York, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007565">
+        <geographic>New Jersey, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007525">
+        <geographic>Nebraska, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007524">
+        <geographic>Montana, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007523">
+        <geographic>Missouri, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007521">
+        <geographic>Minnesota, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007520">
+        <geographic>Michigan, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007517">
+        <geographic>Massachusetts, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007711">
+        <geographic>Rhode Island, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007515">
+        <geographic>Maine, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007254">
+        <geographic>Kansas, United States</geographic>
+</subject>
+<subject authority="tgn" valueURI="http://vocab.getty.edu/tgn/7007252">
+        <geographic>Indiana, United States</geographic>
+</subject>
+
+<!-- Subjects from agents -->
+<subject authority="naf">
+  <name type="corporate"><namePart>Young Women&#39;s Christian Association of the U.S.A.</namePart></name>
+</subject>
+
+<!-- Agents as creators or donors -->
+<name type="corporate">
+  <role>
+    <roleTerm type="text" authority="marcrelator">creator</roleTerm>
+    <roleTerm type="code" authority="marcrelator">cre</roleTerm>
+  </role>
+  <namePart>Young Women&#39;s Christian Association of the U.S.A.</namePart>
+</name>
+
+<!-- Arrangement -->
+
+<!-- Language of materials  -->
+<language>
+  <languageTerm>English</languageTerm>
+</language>
+
+<!-- Scope and content --><abstract>Official programs and reports of YWCA of the U.S.A. state committees arranged alphabetically by state covering Indiana through West Virginia. Materials include convention and conference proceedings where the overall status of the state's associations may be discussed in addition to matters of finance, membership statistics, and organizational management and governance. Summaries of addresses and discussions serve to provide an overview of the focus of the associations. Materials may also report on the status of specific student, city, or factory associations, discuss religious education, provide a history of a state's association work, and report on missionary work and support.</abstract>
+
+<!-- Conditions governing use --><accessCondition type="use and reproduction" displayLabel="Collection Use and Reproduction"> The YWCA of the USA retains copyright ownership of the records, but has authorized the Sophia Smith Collection to grant permission to publish reproductions or quotations from the records on its behalf.
+
+ Copyright to materials authored by persons other than YWCA staff may be owned by those individuals or their heirs or assigns. It is the responsibility of the researcher to identify and satisfy the holders of all copyrights for permission to publish reproductions or quotations beyond "fair use."</accessCondition>
+
+<accessCondition type="restriction on access" displayLabel="Collection Access"> The records are open to research according to the regulations of the Sophia Smith Collection with the following accesptions:
+
+ Portions of the physical papers are stored offsite. To access the microfilm reels and boxes 893-964 and 1061-1132, researchers must give two working days advance notice.
+
+ Access to audiovisual materials may first require production of research copies.
+
+</accessCondition>
+
+<!-- Shelf location -->
+<location>
+  <shelfLocator> Box 1: Series 1; Series 2, Reel 17
+  </shelfLocator>
+</location>
+
+<!-- Digital object ID -->
+<identifier type="local">smith_ssc_324_r017_m001</identifier>
+
+<!-- Digital object URI -->
+<identifier type="asdouri">/repositories/2/digital_objects/1070</identifier>
+
+<!-- Archival object ID -->
+<identifier type="asrefid">7515d3fdee3c0052b104645355d05af5</identifier>
+
+<!-- Archival object URI -->
+<identifier type="asouri">/repositories/2/archival_objects/170526</identifier>
+
+<!-- Resource title -->
+<relatedItem type="host" displayLabel="Collection">
+  <titleInfo>
+    <title>YWCA of the U.S.A. microfilm records</title>
+  </titleInfo>
+  <identifier>MS 324</identifier>
+</relatedItem>
+
+<!-- Finding aid -->
+<relatedItem type="host" displayLabel="Collection">
+  <identifier type="uri" displayLabel="Finding aid"></identifier>
+</relatedItem>
+
+<!-- Parent institution -->
+<location>
+  <physicalLocation>Smith College Special Collections</physicalLocation>
+</location>
+
+<!-- Preferred Citation -->
+<note type="preferred citation" displayLabel="Preferred Citation">State Committee programs and reports, Sophia Smith Collection, MS 324, Smith College Special Collections, Northampton, Massachusetts.</note>
+
+</mods>

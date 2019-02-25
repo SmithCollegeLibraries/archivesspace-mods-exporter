@@ -253,12 +253,11 @@ def renderRecord(do_uri):
 ' ********************************* '
 
 'Retrieve list of digital object URIs for YWCA of the U.S.A. Photographic Records'
-# ywca_photo_uris = myrecordfuncs.getAllResourceUris(cliArguments.RESOURCERECORDID)
+ywca_photo_uris = myrecordfuncs.getAllResourceUris(cliArguments.RESOURCERECORDID)
 
 'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
-# do_photo_uris = myrecordfuncs.getDigitalObjectUris(ywca_photo_uris)
+do_photo_uris = myrecordfuncs.getDigitalObjectUris(ywca_photo_uris)
 
-do_photo_uris = ['/repositories/2/digital_objects/1365']
 
 'Writing the files'
 save_path = cliArguments.outputpath

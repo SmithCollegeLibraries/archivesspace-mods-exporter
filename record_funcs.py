@@ -86,6 +86,15 @@ class aspaceRecordFuncs(object):
 
         return genre_subs
 
+    def deleteGenreSubjects(self, subjects):
+
+        not_a_genre_sub = []
+        for sub in subjects:
+            if sub['terms'][0]['term_type'] != 'genre_form':
+                not_a_genre_sub.append(sub)
+
+        return not_a_genre_sub        
+
 
     def getResource(self, archival_object):
         'Get the Resource Record of a given Archival Object'
@@ -201,7 +210,7 @@ class aspaceRecordFuncs(object):
         resource_num = str(resource_num)
         series_lst = []
 
-        record = self.aspace.get('/repositories/2/resources/' + resource_num + '/tree')
+        record = self.aspace.get('/repositories/4/resources/' + resource_num + '/tree')
 
         if record['children']:
             for child in record['children']:

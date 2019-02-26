@@ -7,7 +7,7 @@
 
 <!-- Title -->
 <titleInfo>
-  <title>{{archival_object.title.rstrip()}}</title>
+  <title>{{archival_object.title|e.rstrip()}}</title>
 </titleInfo>
 
 <!-- Date -->
@@ -44,7 +44,7 @@
 <!-- Genres -->
 {%- if genre_subs %}
 {%- for sub in genre_subs %}
-<genre{% if sub.source %} authority="{{sub.source}}"{% endif %}{% if sub.authority_id %} valueURI="{{sub.authority_id}}"{% endif %}>{{sub.title}}</genre> 
+<genre{% if sub.source %} authority="{{sub.source}}"{% endif %}{% if sub.authority_id %} valueURI="{{sub.authority_id}}"{% endif %}>{{sub.title|e}}</genre> 
 {%- endfor %}
 {%- endif %}
 
@@ -153,7 +153,7 @@
 <!-- Resource title -->
 <relatedItem type="host" displayLabel="Collection">
   <titleInfo>
-    <title>{{resource.title}}</title>
+    <title>{{resource.title|e}}</title>
   </titleInfo>
   <identifier>{{ms_no}}</identifier>
 </relatedItem>
@@ -169,6 +169,6 @@
 </location>
 
 <!-- Preferred Citation -->
-<note type="preferred citation" displayLabel="Preferred Citation">{{archival_object.title.rstrip()}}, {{collecting_unit}}, {{ms_no}}, {{repository.parent_institution_name}}, Northampton, Massachusetts.</note>
+<note type="preferred citation" displayLabel="Preferred Citation">{{archival_object.title|e.rstrip()}}, {{collecting_unit}}, {{ms_no}}, {{repository.parent_institution_name}}, Northampton, Massachusetts.</note>
 
 </mods>

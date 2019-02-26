@@ -6,6 +6,8 @@ import argparse
 import logging
 
 
+REPO_NUM = 2
+
 logging.basicConfig(level=logging.INFO)
 
 class aspaceRecordFuncs(object):

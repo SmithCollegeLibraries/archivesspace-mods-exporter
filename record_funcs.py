@@ -89,6 +89,7 @@ class aspaceRecordFuncs(object):
         return genre_subs
 
     def deleteGenreSubjects(self, subjects):
+        ' Deleting Genre subjects from AllSubjects list because requires different tags than other subjects in template '
 
         not_a_genre_sub = []
         for sub in subjects:

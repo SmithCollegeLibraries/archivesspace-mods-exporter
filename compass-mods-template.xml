@@ -7,7 +7,7 @@
 
 <!-- Title -->
 <titleInfo>
-  <title>{{archival_object.title|e.rstrip()}}</title>
+  <title>{{archival_object.title.rstrip()|e}}</title>
 </titleInfo>
 
 <!-- Date -->
@@ -169,6 +169,6 @@
 </location>
 
 <!-- Preferred Citation -->
-<note type="preferred citation" displayLabel="Preferred Citation">{{archival_object.title|e.rstrip()}}, {{collecting_unit}}, {{ms_no}}, {{repository.parent_institution_name}}, Northampton, Massachusetts.</note>
+<note type="preferred citation" displayLabel="Preferred Citation">{{archival_object.title.rstrip()|e}}, {{collecting_unit}}, {{ms_no}}, {{repository.parent_institution_name}}, Northampton, Massachusetts.</note>
 
 </mods>

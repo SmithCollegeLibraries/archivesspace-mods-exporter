@@ -1,96 +1,79 @@
-description = """Scan directory of MODS files with Islandora CRUD formated names
-and check them against the currently ingested datastreams in Islandora.
+description = """Scan directory of MODS files with Islandora CRUD formated names and check them against the currently ingested datastreams in Islandora. Connects directly for Fedora to get MODS datastreams.
 
-NOTE: If the datastreams to be compared have restricted access you will need to log
-into Islandora and save your cookies to a file using a tool like this one:
-https://chrome.google.com/webstore/detail/cookiestxt/njabckikapfpffapmjgojcnbfjonfjfg?hl=en
-Then use --cookie-file= to point to the cookie file.
+NOTE: to connect to Fedora config file called 'fedora.cfg' is required in the current directory. Copy 'example-fedora.cfg' to 'fedora.cfg' and edit to get started.
 """
 import glob
 import os
-import re
 import requests
 import string
 import argparse
 import logging
+import configparser
 
 import xmlisequal # custom, in the current dir
 
-logging.basicConfig(level=logging.INFO)
-
-argparser = argparse.ArgumentParser(description=description)
-argparser.add_argument('inputdir', help="A directory full of CRUD name format files ready to be ingested.")
-argparser.add_argument('islandora', help="e.g. compass-stage.fivecolleges.edu")
-argparser.add_argument('--cookie-file', help="cookies.txt format cookie file saved from active session. Needed if the objects have restricted access.")
-cliargs = argparser.parse_args()
-
-METADATA_DIRECTORY = cliargs.inputdir
-ENVIRONMENT = cliargs.islandora
-COOKIEFILE = cliargs.cookie_file
-
-def parseCookieFile(cookiefile):
-    cookies = {}
-    with open (cookiefile, 'r') as fp:
-        for line in fp:
-            if not re.match(r'^\#', line):
-                lineFields = line.strip().split('\t')
-                cookies[lineFields[5]] = lineFields[6]
-    return cookies
-
 def getDatastreamsInfo(searchPattern):
+    logging.debug("getDatastreamsInfo")
+    filepathname_S = glob.glob(searchPattern)
+    if len(filepathname_S) < 1:
+        logging.error("No files found. Exiting.")
+        exit(1)
     datastreams = []
-    for filepathname in glob.glob(searchPattern):
+    for filepathname in filepathname_S:
         filename = os.path.basename(filepathname)
         splitFilename = filename.split('_')
         namespace = splitFilename[0]
         pidnumber = splitFilename[1]
         datastreamName = splitFilename[2].split('.')[0]
-        urlTemplate = string.Template("https://$environment/islandora/object/$namespace:$pidnumber/datastream/$datastream/download")
-#        import pdb; pdb.set_trace()
-        url = urlTemplate.substitute(
-            environment = ENVIRONMENT,
-            namespace = namespace,
-            pidnumber = pidnumber,
-            datastream = datastreamName,
-        )
         datastreams.append({
             'filepathname': filepathname,
             'namespace': namespace,
             'pidnumber': pidnumber,
             'datastream': datastreamName,
-            'url': url,
+            # 'url': url,
         })
     return datastreams
 
+
 def getLocalContents(datastreams):
+    logging.debug("getLocalContents")
     for datastream in datastreams:
         with open(datastream['filepathname'], 'rb') as fp:
             datastream['contents_local'] = fp.read()
-            # datastream['checksum_local'] = hashlib.sha1(datastream['contents_local'])
     return datastreams
 
-def getRemoteContents(datastreams):
+
+def getRemoteContents(datastreams, fedoraConfig):
+    logging.debug("getRemoteContents")
+
+    def makeFedoraURL(namespace, pidnumber, datastreamName):
+        urlTemplate = string.Template("https://$environment:$port/fedora/objects/$namespace:$pidnumber/datastreams/$datastream/content")
+        url = urlTemplate.substitute(
+            environment = fedoraConfig['ENVIRONMENT'],
+            port = fedoraConfig['FEDORA_PORT'],
+            namespace = namespace,
+            pidnumber = pidnumber,
+            datastream = datastreamName,
+        )
+        return url
+
     for datastream in datastreams:
-        logging.info(datastream['url'])
-        # cookies = {
-        #     SHIBSESSIONKEY: SHIBSESSIONVALUE,
-        #     SESSIONKEY: SESSIONVALUE
-        # }
-        if COOKIEFILE:
-            cookies = parseCookieFile(COOKIEFILE)
-        else:
-            cookies = {}
-        httpResponse = requests.get(datastream['url'], cookies=cookies)
+        pid = datastream['namespace'] + ':' + datastream['pidnumber']
+        logging.info(pid)
+        url = makeFedoraURL(datastream['namespace'], datastream['pidnumber'], datastream['datastream'])
+        username = fedoraConfig['FEDORA_USER']
+        password = fedoraConfig['FEDORA_PASS']
+        httpResponse = requests.get(url, auth=(username, password))
         if httpResponse.status_code == 200:
-            # datastream['checksum_remote'] = hashlib.sha1(httpResponse.content)
             datastream['contents_remote'] = httpResponse.content
         else:
-            logging.error("Failed to fetch remote datastream for %s because %s" % (datastream['url'], httpResponse.status_code))
-            # datastream['checksum_remote'] = None
+            logging.error("Failed to fetch remote datastream for %s because %s" % (url, httpResponse.status_code))
             datastream['contents_remote'] = None
     return datastreams
 
+
 def getDifferences(datastreams):
+    logging.debug("getDifferences")
     differences = []
     for datastream in datastreams:
         pid = datastream['namespace'] + ':' + datastream['pidnumber']
@@ -106,12 +89,51 @@ def getDifferences(datastreams):
             logging.error("Could not compare %s, missing local or remote data." % datastream['filepathname'])
     return differences
 
-datastreams = getDatastreamsInfo(METADATA_DIRECTORY + '/*MODS.xml')
-datastreams = getLocalContents(datastreams)
-datastreams = getRemoteContents(datastreams)
-differences = getDifferences(datastreams)
 
-for difference in differences:
-    print(difference)
+######## MAIN ########
 
-#import pdb; pdb.set_trace()
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
+    argparser = argparse.ArgumentParser(description=description)
+    argparser.add_argument('INPUTDIR', help="A directory full of CRUD name format files ready to be ingested.")
+    argparser.add_argument('ENVIRONMENT', help="e.g. 'prod'")
+    argparser.add_argument('--config-file', default='fedora.cfg', help="Location of config file. e.g. /home/me/fedora.cfg. Defaults to current directory.")
+    cliargs = argparser.parse_args()
+
+    configFile = cliargs.config_file
+
+    configSection = cliargs.ENVIRONMENT
+
+    try:
+        config = configparser.ConfigParser()
+        config.read_file(open(configFile), source=configFile)
+        configData = config[configSection]
+    except FileNotFoundError:
+        print("Can't find a config file called %s" % configFile)
+        exit(1)
+    except KeyError as e:
+        print("Config file %s doesn't contain that section %s" % (configFile, e))
+        exit(1)
+
+    fedoraConfig = {}
+
+    try:
+        fedoraConfig['ENVIRONMENT'] = configData['hostname']
+        fedoraConfig['FEDORA_PORT'] = configData['port']
+        fedoraConfig['FEDORA_USER'] = configData['username']
+        fedoraConfig['FEDORA_PASS'] = configData['password']
+    except KeyError as e:
+        print("Config file section '%s' doesn't contain required property %s" % (configSection, e))
+        exit(1)
+
+    datastreams = getDatastreamsInfo(cliargs.INPUTDIR + '/*MODS.xml')
+    datastreams = getLocalContents(datastreams)
+    datastreams = getRemoteContents(datastreams, fedoraConfig)
+    differences = getDifferences(datastreams)
+
+    if len(differences) < 1:
+        print("No differences found!")
+    else:
+        for difference in differences:
+            print(difference)

@@ -6,6 +6,8 @@ import argparse
 import logging
 
 
+REPO_NUM = 2
+
 logging.basicConfig(level=logging.INFO)
 
 class aspaceRecordFuncs(object):
@@ -85,6 +87,16 @@ class aspaceRecordFuncs(object):
             pass
 
         return genre_subs
+
+    def deleteGenreSubjects(self, subjects):
+        ' Deleting Genre subjects from AllSubjects list because requires different tags than other subjects in template '
+
+        not_a_genre_sub = []
+        for sub in subjects:
+            if sub['terms'][0]['term_type'] != 'genre_form':
+                not_a_genre_sub.append(sub)
+
+        return not_a_genre_sub        
 
 
     def getResource(self, archival_object):
@@ -194,14 +206,14 @@ class aspaceRecordFuncs(object):
         return obj_langs
 
 
-    def getSeries(self, resource_num):
+    def getSeries(self, resource_num, repo_num):
         ' Returns first level down children of given resource '
 
         logging.debug('Retrieving Series level children of Resource %s' % resource_num)
         resource_num = str(resource_num)
         series_lst = []
 
-        record = self.aspace.get('/repositories/2/resources/' + resource_num + '/tree')
+        record = self.aspace.get('/repositories/'+ str(repo_num) +'/resources/' + resource_num + '/tree')
 
         if record['children']:
             for child in record['children']:
@@ -259,7 +271,7 @@ class aspaceRecordFuncs(object):
         ' Calls getSeries and getChildUris to return all the Archival Object URIs for a resource '
         
         logging.info('Calling getSeries and getChildUris for Resource %s' % resource_num)
-        hierarchy = self.getSeries(resource_num)
+        hierarchy = self.getSeries(resource_num, REPO_NUM)
         uri_lst = []
         for level in hierarchy:
             logging.info('Adding all Archival Object URIs for Resource to list')

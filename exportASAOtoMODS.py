@@ -122,218 +122,94 @@ def getMsNo(archival_object):
     return ms_no
 
 
-class AoGeneologyChain(object):
-    def __init__(self, archival_object):
-        '''Traverse all parent AOs and save them to a list. Also tack on the
-        Resource Record.
-        '''
-        newGeneologyChain = dict()
-        newGeneologyChain['object'] = archival_object
-        newGeneologyChain['parents'] = []
-        newGeneologyChain['resource'] = myrecordfuncs.getResource(archival_object)
-        for i in range(100):
-            try:
-                parentUri = archival_object['parent']['ref']
-            except KeyError:
-                break
-            archival_object = aspace.get(parentUri)
-            newGeneologyChain['parents'].append(archival_object)
-        self.newGeneologyChain = newGeneologyChain
+def getAgents(archival_object):
+    'Returns agents'
+    agents_lst = []
+    if 'linked_agents' in archival_object.keys():
+        for agent in archival_object['linked_agents']:
+            agents_lst.append(agent)
 
-    def __repr__(self):
-        return(pprint.pformat(self.newGeneologyChain))
+    new_agents_lst = []     
+    for agent in agents_lst:
+        agent_dct = {}
+        agent_dct['role'] = agent['role']
+        uri = agent['ref']
+        agent_dct['data'] = aspace.get(uri) 
+        new_agents_lst.append(agent_dct)
 
-    def dereferenceRefs(self, archival_object, elementsName):
-        '''Dereference references from a given Archival Object or Resource Record
-        and return them as a list.
-        '''
-        elements = []
 
+    for agent in new_agents_lst:
+        if agent['role'] == 'creator':
+            if agent['data']['jsonmodel_type'] == 'agent_person':
+                agent['data']['jsonmodel_type'] = 'personal'
+            elif agent['data']['jsonmodel_type'] == 'agent_corporate_entity':
+                agent['data']['jsonmodel_type'] = 'corporate'
+            else:
+                pass
+        if agent['role'] == 'source':
+            if agent['data']['jsonmodel_type'] == 'agent_person':
+                agent['data']['jsonmodel_type'] = 'personal'
+            elif agent['data']['jsonmodel_type'] == 'agent_corporate_entity':
+                agent['data']['jsonmodel_type'] = 'corporate'
+            else:
+                pass
+        if agent['role'] == 'subject':
+            if agent['data']['jsonmodel_type'] == 'agent_person':
+                agent['data']['jsonmodel_type'] = 'personal'
+            elif agent['data']['jsonmodel_type'] == 'agent_corporate_entity':
+                agent['data']['jsonmodel_type'] = 'corporate'
+            else:
+                pass
+
+            if 'display_name' in agent['data'].keys():
+                if 'authority_id' in agent['data']['display_name'].keys():
+                    if agent['data']['display_name']['source'] == 'naf':
+                        if 'loc.gov' not in agent['data']['display_name']['authority_id']:
+                            agent['data']['display_name']['authority_id'] = 'http://id.loc.gov/authorities/names/' + agent['data']['display_name']['authority_id']
+                        elif agent['data']['display_name']['source'] == 'lcsh':
+                            agent['data']['display_name']['authority_id'] = 'http://id.loc.gov/authorities/subjects/' + agent['data']['display_name']['authority_id']
+                        elif agent['data']['display_name']['source'] == 'tgn':
+                            agent['data']['display_name']['authority_id'] = 'http://vocab.getty.edu/tgn/' + agent['data']['display_name']['authority_id']
+                        elif agent['data']['display_name']['source'] == 'aat':
+                            agent['data']['display_name']['authority_id'] = 'http://vocab.getty.edu/aat/' + agent['data']['display_name']['authority_id']
+
+    return new_agents_lst
+
+
+def getParentRecords(archival_object):
+    parent_uris = []
+    for i in range(100):
         try:
-            for element in archival_object[elementsName]:
-                elementData = aspace.get(element['ref'])
-                elements.append(elementData)
+            parentUri = archival_object['parent']['ref']
         except KeyError:
-            pass
-        # print(elements)
-        return elements
+            break
+        parent_ao = aspace.get(parentUri)
+        if parent_ao['uri'] not in parent_uris:
+            parent_uris.append(parent_ao['uri'])
 
-    def lazyFind(self, mytype):
-        """Get fields of a given type from the newGeneologyChain in a "lazy"
-        manner, i.e. stop at the first instance. If nothing is found, return an
-        empty list.
-        """
-        mylist = []  # Start a running list
+    parent_records = []
+    for uri in parent_uris:
+        parent_record = aspace.get(uri)
+        parent_records.append(parent_record)
 
-        # If the field exists in the initial decendant object stop there
-        mylist.extend(self.dereferenceRefs(self.newGeneologyChain['object'], mytype))
-        if mylist:
-            return mylist
-
-        # If not, look in the parent Archival Objects. If I find something good
-        # stop and return that.
-        for archival_object in self.newGeneologyChain['parents']:
-            mylist.extend(self.dereferenceRefs(archival_object, mytype))
-            if mylist:
-                return mylist
-
-        # If all else fails, try to find it in the Resource Record
-        mylist.extend(self.dereferenceRefs(self.newGeneologyChain['resource'], mytype))
-        return mylist
-
-    def TEST_lazySubFind(self, mytype, subtypeFieldName='', subtype=''):
-        """Get fields of a given type from the newGeneologyChain in a "lazy"
-        manner, i.e. stop at the first instance. If nothing is found, return an
-        empty list.
-        """
-
-        mylist = []  # Start a running list
-
-        def findAgentsByType(subtypeFieldName, subtype):
-            myagents = []
-            for item in mylist:
-                # Within each item there's a list of subtypes
-                # Is it one of the ones I'm looking for?
-                for role in item[subtypeFieldName]:
-                    if role == subtype:
-                        # If so, add it to the list of agents of the desired type
-                        myagents.append(item)
-            return myagents
-
-        # If the field exists in the initial decendant object stop there
-        mylist.extend(self.dereferenceRefs(self.newGeneologyChain['object'], mytype))
-        if mylist:
-            # Run through the list to see if there are any of the desired subtype
-            myagents = findAgentsByType(subtypeFieldName, subtype)
-            if myagents:
-                return myagents
-
-        # If not, look in the parent Archival Objects. If I find something good
-        # stop and return that.
-        for archival_object in self.newGeneologyChain['parents']:
-            mylist.extend(self.dereferenceRefs(archival_object, mytype))
-            if mylist:
-                # Run through the list to see if there are any of the desired subtype
-                myagents = findAgentsByType(subtypeFieldName, subtype)
-                if myagents:
-                    return myagents
-
-        # If all else fails, try to find it in the Resource Record
-        mylist.extend(self.dereferenceRefs(self.newGeneologyChain['resource'], mytype))
-        # Run through the list to see if there are any of the desired subtype
-        myagents = findAgentsByType(subtypeFieldName, subtype)
-        if myagents:
-            return myagents
-
-    def getAgentsInherited(self, mychain):
-        """Get agents running up the inheritance chain handling them
-        independently by type: creator, source, subject.
-        """
-        # agentsAnyType = self.lazyFind('linked_agents')
-        # mychain = AoGeneologyChain(archival_object)
-
-        agents = {}
-        # Sort agents out into their roles for different uses in the MARC record
-        agents['creators'] = []
-        agents['donors'] = []
-        agents['subjects'] = []
-        agents['creators'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName='linked_agent_roles', subtype='creator')
-        agents['donors'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName='linked_agent_roles', subtype='source')
-        agents['subjects'] = mychain.TEST_lazySubFind('linked_agents', subtypeFieldName='linked_agent_roles', subtype='subject')
-        
-        if agents['creators']:
-            for agent in agents['creators']:
-                if agent['jsonmodel_type'] == 'agent_person':
-                    agent['jsonmodel_type'] = 'personal'
-                elif agent['jsonmodel_type'] == 'agent_corporate_entity':
-                    agent['jsonmodel_type'] = 'corporate'
-                else:
-                    pass
-
-        if agents['donors']:
-            for agent in agents['donors']:
-                if agent['jsonmodel_type'] == 'agent_person':
-                    agent['jsonmodel_type'] = 'personal'
-                elif agent['jsonmodel_type'] == 'agent_corporate_entity':
-                    agent['jsonmodel_type'] = 'corporate'
-                else:
-                    pass
-
-        if agents['subjects']:
-            for agent in agents['subjects']:
-                if agent['jsonmodel_type'] == 'agent_person':
-                    agent['jsonmodel_type'] = 'personal'
-                elif agent['jsonmodel_type'] == 'agent_corporate_entity':
-                    agent['jsonmodel_type'] = 'corporate'
-                else:
-                    pass
+    return parent_records
 
 
-                if 'display_name' in agent.keys():
-                    if 'authority_id' in agent['display_name'].keys():
-                        if agent['display_name']['source'] == 'naf':
-                            if 'loc.gov' not in agent['display_name']['authority_id']:
-                                agent['display_name']['authority_id'] = 'http://id.loc.gov/authorities/names/' + agent['display_name']['authority_id']
-                        elif agent['display_name']['source'] == 'lcsh':
-                            agent['display_name']['authority_id'] = 'http://id.loc.gov/authorities/subjects/' + agent['display_name']['authority_id']
-                        elif agent['display_name']['source'] == 'tgn':
-                            agent['display_name']['authority_id'] = 'http://vocab.getty.edu/tgn/' + agent['display_name']['authority_id']
-                        elif agent ['display_name']['source'] == 'aat':
-                            agent['display_name']['authority_id'] = 'http://vocab.getty.edu/aat/' + agent['display_name']['authority_id']
-        
-        return agents
+def getAllAgents(archival_object, resource):
+    all_agents = []
 
-    # def getNotesByType(self, noteType):
-    #     '''Traverse all parent AOs and the Resource Record and get all the
-    #     notes of given type
-    #     '''
-    #     notes = []
-    #     for archival_object in self.aoGeneologyChain:
-    #         try:
-    #             for note in archival_object['notes']:
-    #                 if note['type'] == noteType:
-    #                     notes.append(note)
-    #         except KeyError:
-    #             pass
-    #     return notes
+    resource_agents = getAgents(resource)
+    all_agents.extend(resource_agents)
 
-    # def getAllNotes(self):
-    #     # Get list of controled values for note types
-    #     enums = aspace.get(NOTETYPESURI)
-    #     noteTypeS = enums['values']
-    #     notes = dict()
-    #     for noteType in noteTypeS:
-    #         notes[noteType] = self.getNotesByType(noteType)
-    #     return notes
+    ao_agents = getAgents(archival_object)
+    all_agents.extend(ao_agents)
 
+    parent_records = getParentRecords(archival_object)
+    for record in parent_records:
+        parent_agents = getAgents(record)
+        all_agents.extend(parent_agents)
 
-# mychain = AoGeneologyChain(archival_object)
-# notes = getNotesByType(mychain, userestrict)
-
-# print(notes)
-
-# Traverse all parent AOs and the Resource Record and get their subjects
-# subjects = mychain.getSubjectsInherited()
-
-# agents = mychain.getAgentsInherited()
-
-
-# Debug
-# pprint.pprint(agents)
-# import pdb; pdb.set_trace()
-
-# Get genre data
-# Get agent data
-# Get notes data
-# allNotes = mychain.getNotes()
-# notesToPublish = dict()
-# notesToPublish['accessrestrict'] = []
-#
-# try:
-#     notesToPublish['accessrestrict'].append(allNotes['accessrestrict'][0])
-#     notesToPublish['accessrestrict'].append(allNotes['accessrestrict'][-1])
-# except KeyError:
-#     pass
+    return all_agents
 
 
 def renderRecord(do_uri):
@@ -342,6 +218,7 @@ def renderRecord(do_uri):
     logging.info('Calling all functions and rendering MODS record')
     digital_object = getDigitalObject(do_uri)
     archival_object = getArchivalObject(do_uri)
+    archival_object = archival_object
     container = getShelfLocation(archival_object)
     folder = getFolder(archival_object)
     resource = myrecordfuncs.getResource(archival_object)
@@ -353,10 +230,10 @@ def renderRecord(do_uri):
     collecting_unit = getCollectingUnit(archival_object)
     ms_no = getMsNo(archival_object)
     repository = getRepository(archival_object)
-    mychain = AoGeneologyChain(archival_object)
     subjects = myrecordfuncs.getSubjects(archival_object)
     genre_subs = myrecordfuncs.getGenreSubjects(subjects, resource)
-    agents = mychain.getAgentsInherited(mychain)
+    subjects = myrecordfuncs.deleteGenreSubjects(subjects)
+    agents = getAllAgents(archival_object, resource)
 
     data = {'archival_object': archival_object, 'resource': resource, 'langs': langs, 'repository': repository, 'subjects': subjects, 'genre_subs': genre_subs, 'agents': agents, 'collecting_unit': collecting_unit, 'ms_no': ms_no, 'digital_object': digital_object, 'folder': folder, 'container': container, 'abstract': abstract, 'userestrict': userestrict, 'accessrestrict': accrestrict}
 

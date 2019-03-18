@@ -7,7 +7,7 @@
 
 <!-- Title -->
 <titleInfo>
-  <title>{{archival_object.title.rstrip()}}</title>
+  <title>{{archival_object.title.rstrip()|e}}</title>
 </titleInfo>
 
 <!-- Date -->
@@ -44,7 +44,7 @@
 <!-- Genres -->
 {%- if genre_subs %}
 {%- for sub in genre_subs %}
-<genre{% if sub.source %} authority="{{sub.source}}"{% endif %}>{{sub.title}}</genre>
+<genre{% if sub.source %} authority="{{sub.source}}"{% endif %}{% if sub.authority_id %} valueURI="{{sub.authority_id}}"{% endif %}>{{sub.title|e}}</genre> 
 {%- endfor %}
 {%- endif %}
 
@@ -62,42 +62,44 @@
       {%- endif %}
     {%- endfor %}
   {%- endif %}
-</subject>
+</subject>  
 {%- endfor %}
 {%- endif %}
 
 <!-- Subjects from agents -->
-{%- if agents.subjects %}
-{%- for agent in agents.subjects %}
-<subject{%- if agent.display_name.source %} authority="{{agent.display_name.source}}"{%- endif %} {%- if agent.display_name.authority_id %} valueURI="{{agent.display_name.authority_id}}" {%- endif %}>
-  <name type="{{agent.jsonmodel_type}}"><namePart>{{agent.title|e}}</namePart></name>
+{%- for agent in agents %}
+{%- if agent.role == 'subject' %}
+<subject{%- if agent.data.display_name.source %} authority="{{agent.data.display_name.source}}"{%- endif %} {%- if agent.data.display_name.authority_id %} valueURI="{{agent.data.display_name.authority_id}}" {%- endif %}>
+  <name type="{{agent.data.jsonmodel_type}}"><namePart>{{agent.data.title|e}}</namePart></name>
 </subject>
-{%- endfor %}
 {%- endif %}
+{%- endfor %}
 
-<!-- Agents as creators or donors -->
-{%- if agents.creators %}
-{%- for agent in agents.creators %}
-<name type="{{agent.jsonmodel_type}}">
+<!-- Agents as donors or creators -->
+{%- for agent in agents %}
+{%- if agent.role == 'creator' %}
+  <name type="{{agent.data.jsonmodel_type}}">
   <role>
     <roleTerm type="text" authority="marcrelator">creator</roleTerm>
     <roleTerm type="code" authority="marcrelator">cre</roleTerm>
   </role>
-  <namePart>{{agent.title|e}}</namePart>
-</name>
-{%- endfor %}
+    <namePart>{{agent.data.title|e}}</namePart>
+  </name>
 {%- endif %}
-{%- if agents.donors %}
-{%- for agent in agents.donors %}
-<name type="{{agent.jsonmodel_type}}">
+
+{%- if agent.role == 'source' %}
+<subject{%- if agent.data.display_name.source %} authority="{{agent.data.display_name.source}}"{%- endif %} {%- if agent.data.display_name.authority_id %} valueURI="{{agent.data.display_name.authority_id}}" {%- endif %}>
+  <name type="{{agent.data.jsonmodel_type}}">
   <role>
     <roleTerm type="text" authority="marcrelator">donor</roleTerm>
     <roleTerm type="code" authority="marcrelator">dnr</roleTerm>
   </role>
-  <namePart>{{agent.title|e}}</namePart>
-</name>
-{%- endfor %}
+    <namePart>{{agent.data.title|e}}</namePart>
+  </name>
+</subject>
 {%- endif %}
+
+{%- endfor %}
 
 <!-- Arrangement -->
 {%- if ar_desc %}<abstract type="arrangement">{{ar_desc}}
@@ -151,7 +153,7 @@
 <!-- Resource title -->
 <relatedItem type="host" displayLabel="Collection">
   <titleInfo>
-    <title>{{resource.title}}</title>
+    <title>{{resource.title|e}}</title>
   </titleInfo>
   <identifier>{{ms_no}}</identifier>
 </relatedItem>
@@ -167,6 +169,6 @@
 </location>
 
 <!-- Preferred Citation -->
-<note type="preferred citation" displayLabel="Preferred Citation">{{archival_object.title.rstrip()}}, {{collecting_unit}}, {{ms_no}}, {{repository.parent_institution_name}}, Northampton, Massachusetts.</note>
+<note type="preferred citation" displayLabel="Preferred Citation">{{archival_object.title.rstrip()|e}}, {{collecting_unit}}, {{ms_no}}, {{repository.parent_institution_name}}, Northampton, Massachusetts.</note>
 
 </mods>

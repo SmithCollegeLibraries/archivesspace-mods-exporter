@@ -2,7 +2,7 @@ import json
 import os
 from archivesspace import archivesspace
 import pprint
-from utilities import *
+# from utilities import *
 import argparse
 import logging
 
@@ -61,6 +61,7 @@ def updateDOwithCompassURI(ywca_compass_object):
 	compass_uri = ywca_compass_object['PID']
 	uri_key = {'file_uri': compass_uri}
 	digital_object['file_versions'].append(uri_key)
+	digital_object['file_versions'][0]['publish'] = True
 	# Updates digital object records with the file URIs
 	response = aspace.post('/repositories/2/digital_objects/' + do_id, requestData=digital_object)
 

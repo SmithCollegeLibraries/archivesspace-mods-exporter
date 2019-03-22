@@ -1,6 +1,6 @@
 # About
 
-Tools for syncing metadata from ArchivesSpace to Islandora.
+Tools for syncing metadata from ArchivesSpace to Islandora for the YWCA digitization project at Smith College Special Collections. NOTICE: this toolset was developed specifically for one institution's metadata practices and morover in the context of a specific project. If you chose to use this code YMMV!
 
 ## Mapping
 https://github.com/smith-special-collections/sc-documentation/wiki/Mapping-archival-and-bibliographic-metadata-schemas-to-Compass-MODS

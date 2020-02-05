@@ -133,7 +133,7 @@
 <!-- Shelf location -->
 {%- if container %}
 <location>
-  <shelfLocator> {{container}} {%- if folder|length > 1 %}, {{folder}} {%- endif %}
+  <shelfLocator> {{container}} {%- if folder is not none %}, {{folder}} {%- endif %}
   </shelfLocator>
 </location>
 {%- endif %}

@@ -6,11 +6,15 @@
       xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd">
 
 <!-- Title -->
+{%- if archival_object|length > 1 %}
+{%- if archival_object.title %}
 <titleInfo>
-  <title>{{archival_object.title|e.rstrip()}}</title>
+  <title>{{archival_object.title.rstrip()|e}}</title>
 </titleInfo>
+{%- endif %}
 
 <!-- Date -->
+{%- if archival_object.dates %}
 {%- for item in archival_object.dates %}
 <originInfo>
   {%- if item.expression %}
@@ -24,6 +28,8 @@
   {%- endif %}
 </originInfo>
 {%- endfor %}
+{%- endif %}
+{%- endif %}
 
 <!-- Repository name -->
 <name>
@@ -133,7 +139,7 @@
 <!-- Shelf location -->
 {%- if container %}
 <location>
-  <shelfLocator> {{container}} {%- if folder|length > 1 %}, {{folder}} {%- endif %}
+  <shelfLocator> {{container}} {%- if folder is not none %}, {{folder}} {%- endif %}
   </shelfLocator>
 </location>
 {%- endif %}
@@ -145,18 +151,26 @@
 <identifier type="asdouri">{{digital_object.uri}}</identifier>
 
 <!-- Archival object ID -->
+{%- if archival_object.ref_id %}
 <identifier type="asrefid">{{archival_object.ref_id}}</identifier>
+{%- endif %}
 
 <!-- Archival object URI -->
+{%- if archival_object.uri %}
 <identifier type="asouri">{{archival_object.uri}}</identifier>
+{%- endif %}
 
 <!-- Resource title -->
+{%- if resource|length > 1 %}
+{%- if resource.title %}
 <relatedItem type="host" displayLabel="Collection">
   <titleInfo>
     <title>{{resource.title|e}}</title>
   </titleInfo>
   <identifier>{{ms_no}}</identifier>
 </relatedItem>
+{%- endif %}
+{%- endif %}
 
 <!-- Finding aid -->
 <relatedItem type="host" displayLabel="Collection">
@@ -169,6 +183,6 @@
 </location>
 
 <!-- Preferred Citation -->
-<note type="preferred citation" displayLabel="Preferred Citation">{{archival_object.title|e.rstrip()}}, {{collecting_unit}}, {{ms_no}}, {{repository.parent_institution_name}}, Northampton, Massachusetts.</note>
+<note type="preferred citation" displayLabel="Preferred Citation">{%- if archival_object|length > 1 %}{{archival_object.title.rstrip()|e}},{%- endif %} {{collecting_unit}},  {%- if ms_no|length > 1 %} {{ms_no}},{%- endif %} {{repository.parent_institution_name}}, Northampton, Massachusetts.</note>
 
 </mods>

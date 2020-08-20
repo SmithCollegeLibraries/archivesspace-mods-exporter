@@ -108,7 +108,7 @@ def renderRecord(cache_obj):
         genre_subs = []
         subjects = []
     try:
-        agents = myrecordfuncs.getAllAgents(archival_object, resource)
+        agents = myrecordfuncs.getAgents(archival_object)
     except Exception as e:
         logging.error(e)
         agents = []

@@ -352,22 +352,6 @@ class aspaceRecordFuncs(object):
         return parent_records
 
 
-    def getAllAgents(self, archival_object, resource):
-        all_agents = []
-
-        resource_agents = self.getAgents(resource)
-        all_agents.extend(resource_agents)
-
-        ao_agents = self.getAgents(archival_object)
-        all_agents.extend(ao_agents)
-
-        parent_records = self.getParentRecords(archival_object)
-        for record in parent_records:
-            parent_agents = self.getAgents(record)
-            all_agents.extend(parent_agents)
-
-        return all_agents
-
  
 if __name__ == "__main__":
 

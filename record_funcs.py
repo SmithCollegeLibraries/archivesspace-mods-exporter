@@ -115,7 +115,7 @@ class aspaceRecordFuncs(object):
         return sub_list
 
 
-    def getGenreSubjects(self, subjects, resource):
+    def getGenreSubjects(self, subjects):
         'Gets genre_form type subjects for Resource'
 
         genre_subs = []
@@ -123,11 +123,6 @@ class aspaceRecordFuncs(object):
             if subject['terms'][0]['term_type'] == 'genre_form':
                 genre_subs.append(subject)
      
-        if len(genre_subs) == 0:
-            resource_subjects = self.getSubjects(resource)
-            for subject in resource_subjects:
-                if subject['terms'][0]['term_type'] == 'genre_form':
-                    genre_subs.append(subject)
 
         return genre_subs
 

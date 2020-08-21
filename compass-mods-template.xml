@@ -41,9 +41,8 @@
 {%- if archival_object.extents %}
 {%- for item in archival_object.extents %}
 <physicalDescription>
-  <extent>{{item.number}} {{item.extent_type}}</extent>
-  <extent>{{item.container_summary}}</extent>
-</physicalDescription>
+  <extent>{{item.number}} {{item.extent_type}} ({{item.container_summary}}{% if item.dimensions %} ; {{item.dimensions}}{% endif %})</extent>
+ --></physicalDescription>
 {%- endfor %}
 {%- endif %}
 

@@ -101,7 +101,7 @@ def renderRecord(cache_obj):
         ms_no = ''
     try:
         subjects = myrecordfuncs.getSubjects(archival_object)
-        genre_subs = myrecordfuncs.getGenreSubjects(subjects, resource)
+        genre_subs = myrecordfuncs.getGenreSubjects(subjects)
         subjects = myrecordfuncs.removeGenreSubjects(subjects)
     except Exception as e:
         logging.error(e)

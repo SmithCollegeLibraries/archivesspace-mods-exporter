@@ -296,27 +296,8 @@ class aspaceRecordFuncs(object):
             agent_dct['data'] = self.aspace.client.get(uri).json()
             new_agents_lst.append(agent_dct)
 
-
         for agent in new_agents_lst:
-            if agent['role'] == 'creator':
-                if agent['data']['jsonmodel_type'] == 'agent_person':
-                    agent['data']['jsonmodel_type'] = 'personal'
-                elif agent['data']['jsonmodel_type'] == 'agent_corporate_entity':
-                    agent['data']['jsonmodel_type'] = 'corporate'
-                elif agent['data']['jsonmodel_type'] == 'agent_family':
-                    agent['data']['jsonmodel_type'] = 'family'
-                else:
-                    continue
-            if agent['role'] == 'source':
-                if agent['data']['jsonmodel_type'] == 'agent_person':
-                    agent['data']['jsonmodel_type'] = 'personal'
-                elif agent['data']['jsonmodel_type'] == 'agent_corporate_entity':
-                    agent['data']['jsonmodel_type'] = 'corporate'
-                elif agent['data']['jsonmodel_type'] == 'agent_family':
-                    agent['data']['jsonmodel_type'] = 'family'
-                else:
-                    continue
-            if agent['role'] == 'subject':
+            if agent['role'] == 'creator' or agent['role'] == 'source' or agent['role'] == 'subject':
                 if agent['data']['jsonmodel_type'] == 'agent_person':
                     agent['data']['jsonmodel_type'] = 'personal'
                 elif agent['data']['jsonmodel_type'] == 'agent_corporate_entity':

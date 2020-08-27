@@ -9,7 +9,7 @@
 {%- if archival_object|length > 1 %}
 {%- if archival_object.title %}
 <titleInfo>
-  <title>{{archival_object.title.rstrip()|e}}</title>
+  <title>{{archival_object.title.rstrip()|e}} {%- if excerpts == True %} (Excerpts){%- endif %}</title>
 </titleInfo>
 {%- endif %}
 

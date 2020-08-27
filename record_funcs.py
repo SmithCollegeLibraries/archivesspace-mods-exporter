@@ -1,5 +1,7 @@
 from asnake.aspace import ASpace
 import logging
+import re
+import html
 
 
 
@@ -138,6 +140,18 @@ class aspaceRecordFuncs(object):
         return non_genre_subs        
 
 
+    def removeEADTags(self, note):
+        regex = '(<.*?>)'
+        for n in note:
+            n['content'] = html.unescape(n['content'])
+            chars_to_remove = re.findall(regex, n['content'])
+            if len(chars_to_remove) > 0:
+                for char in chars_to_remove:
+                    n['content'] = n['content'].replace(char, "") 
+
+        return note
+
+
     def getNoteTup(self, note):
         if 'type' in note.keys():
             if 'content' in note.keys():
@@ -226,7 +240,7 @@ class aspaceRecordFuncs(object):
         for note in note_tups:
             logging.debug('Iterating over list of notes to retrieve %s type notes if they exist' % notetype)
             if note[0] == notetype:
-                return note[1]
+                return self.removeEADTags(note[1])
 
 
     def getLangAtAOLevel(self, archival_object, resource):

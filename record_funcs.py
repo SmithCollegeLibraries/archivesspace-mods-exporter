@@ -145,7 +145,10 @@ class aspaceRecordFuncs(object):
             else:
                 tup = (note['type'], note['subnotes'])
 
-        return tup
+            return tup
+        
+        else:
+            return None
 
 
     def getNotesByResource(self, resource):
@@ -158,7 +161,8 @@ class aspaceRecordFuncs(object):
                 logging.debug('Retrieving available notes from the Resource of %s' % resource['uri'])
                 try:
                     tup = self.getNoteTup(note)
-                    note_tups.append(tup)
+                    if tup != None:
+                        note_tups.append(tup)
                 except Exception as e:
                     logging.error(e)
 
@@ -176,7 +180,8 @@ class aspaceRecordFuncs(object):
                 logging.debug('Retrieving available notes from %s' % archival_object['uri'])
                 try:
                     tup = self.getNoteTup(note)
-                    note_tups.append(tup)
+                    if tup != None:
+                        note_tups.append(tup)
                 except Exception as e:
                     logging.error(e)
 
@@ -189,7 +194,8 @@ class aspaceRecordFuncs(object):
                         logging.debug('Retrieving available notes from parent of %s' % archival_object['uri'])
                         try:
                             tup = self.getNoteTup(note)
-                            note_tups.append(tup)
+                            if tup != None:
+                                note_tups.append(tup)
                         except Exception as e:
                             logging.error(e)
 
@@ -202,7 +208,8 @@ class aspaceRecordFuncs(object):
                             logging.debug('Retrieving available notes from grandparent of %s' % archival_object['uri'])
                             try:
                                 tup = self.getNoteTup(note)
-                                note_tups.append(tup)
+                                if tup != None:
+                                    note_tups.append(tup)
                             except Exception as e:
                                 logging.error(e)
 
@@ -296,22 +303,28 @@ class aspaceRecordFuncs(object):
                     agent['data']['jsonmodel_type'] = 'personal'
                 elif agent['data']['jsonmodel_type'] == 'agent_corporate_entity':
                     agent['data']['jsonmodel_type'] = 'corporate'
+                elif agent['data']['jsonmodel_type'] == 'agent_family':
+                    agent['data']['jsonmodel_type'] = 'family'
                 else:
-                    pass
+                    continue
             if agent['role'] == 'source':
                 if agent['data']['jsonmodel_type'] == 'agent_person':
                     agent['data']['jsonmodel_type'] = 'personal'
                 elif agent['data']['jsonmodel_type'] == 'agent_corporate_entity':
                     agent['data']['jsonmodel_type'] = 'corporate'
+                elif agent['data']['jsonmodel_type'] == 'agent_family':
+                    agent['data']['jsonmodel_type'] = 'family'
                 else:
-                    pass
+                    continue
             if agent['role'] == 'subject':
                 if agent['data']['jsonmodel_type'] == 'agent_person':
                     agent['data']['jsonmodel_type'] = 'personal'
                 elif agent['data']['jsonmodel_type'] == 'agent_corporate_entity':
                     agent['data']['jsonmodel_type'] = 'corporate'
+                elif agent['data']['jsonmodel_type'] == 'agent_family':
+                    agent['data']['jsonmodel_type'] = 'family'
                 else:
-                    pass
+                    continue
 
                 if 'display_name' in agent['data'].keys():
                     if 'authority_id' in agent['data']['display_name'].keys():
@@ -345,6 +358,36 @@ class aspaceRecordFuncs(object):
             parent_records.append(parent_record)
 
         return parent_records
+
+
+    def filterSubjectAgents(self, agent_list):
+        filtered_agents = []
+        for agent in agent_list:
+            if agent['role'] == 'subject':
+                continue
+            else:
+                filtered_agents.append(agent)
+
+        return filtered_agents
+
+
+    def getInheritedAgents(self, archival_object, resource):
+        '''Gets all agents from parent records apart from agents as subjects'''
+        all_agents = []
+
+        resource_agents = self.getAgents(resource)
+        all_agents.extend(resource_agents)
+
+        ao_agents = self.getAgents(archival_object)
+        all_agents.extend(ao_agents)
+
+        parent_records = self.getParentRecords(archival_object)
+        for record in parent_records:
+            parent_agents = self.getAgents(record)
+            all_agents.extend(parent_agents)
+
+        filtered_agents = self.filterSubjectAgents(all_agents)
+        return filtered_agents
 
 
  

@@ -149,7 +149,8 @@ class aspaceRecordFuncs(object):
             chars_to_remove = re.findall(regex, n['content'])
             if len(chars_to_remove) > 0:
                 for char in chars_to_remove:
-                    n['content'] = n['content'].replace(char, "") 
+                    n['content'] = n['content'].replace(char, "")
+            n['content'] = html.escape(n['content']) 
 
         return note
 

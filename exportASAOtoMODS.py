@@ -135,7 +135,6 @@ def renderRecord(cache_obj):
 
 
 
-
 if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
@@ -147,7 +146,7 @@ if __name__ == "__main__":
 
     myrecordfuncs = record_funcs.aspaceRecordFuncs(aspace)
 
-    'Make API call for each record in YWCA of the U.S.A. Photographic Records and add all Digital Object URIs to a list'
+    # Make API call for each digital object and set cache
     list_of_repos = [2, 3, 4]
 
     compass_dos = []
@@ -161,7 +160,7 @@ if __name__ == "__main__":
                     compass_dos.append(c) 
 
     
-    'Writing the files'
+    # Writing the files
     save_path = cliArguments.OUTPUTPATH
 
     count = 0

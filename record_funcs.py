@@ -70,13 +70,15 @@ class aspaceRecordFuncs(object):
         'Returns file name in format islandora_NUMBER_MODS'
 
         logging.debug('Returning file name for %s in format: islandora_NUMBER_MODS' % do_json['digital_object_id'])
+        regex = '(smith:+?\d+)'
         try:
-            uri = do_json['file_versions'][0]['file_uri']
-            split_uri = uri.split('/')
-            islandora_pid = split_uri[-1]
+            uris = [uri['file_uri'] for uri in do_json['file_versions'] if 'compass' in uri['file_uri']]
+            uri = uris[0]
+            islandora_pid = re.search(regex, uri).group()
             formatted_islandora_pid = islandora_pid.replace(':', '_')
             mods_file_name = formatted_islandora_pid + '_MODS'
-        except:
+        except Exception as e:
+            logging.error(e)
             mods_file_name = 'did_not_work'
 
         return mods_file_name

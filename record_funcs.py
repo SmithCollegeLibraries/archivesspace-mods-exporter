@@ -2,6 +2,7 @@ from asnake.aspace import ASpace
 import logging
 import re
 import html
+from pprint import pprint as pp
 
 
 
@@ -68,35 +69,24 @@ class aspaceRecordFuncs(object):
 
     def getModsFileName(self, do_json):
         'Returns file name in format islandora_NUMBER_MODS'
+        'Assumes that if multiple file version URLs to Compass exist, all are identical'
+        'Asummes will work even if URL is written differently'
 
         logging.debug('Returning file name for %s in format: islandora_NUMBER_MODS' % do_json['digital_object_id'])
         regex = '(smith:+?\d+)'
-        try:
-            uris = [uri['file_uri'] for uri in do_json['file_versions'] if 'compass' in uri['file_uri']]
-            uri = uris[0]
-            islandora_pid = re.search(regex, uri).group()
-            formatted_islandora_pid = islandora_pid.replace(':', '_')
-            mods_file_name = formatted_islandora_pid + '_MODS'
-        except Exception as e:
-            logging.error(e)
-            mods_file_name = 'did_not_work'
+        uris = [uri['file_uri'] for uri in do_json['file_versions'] if 'compass' in uri['file_uri']]
+        uri = uris[0] # Takes first URL of list
+        islandora_pid = re.search(regex, uri).group()
+        formatted_islandora_pid = islandora_pid.replace(':', '_')
+        mods_file_name = formatted_islandora_pid + '_MODS'
 
         return mods_file_name
 
 
-    def getSubjects(self, archival_object):
-        'Returns list of subjects for an Archival Object'
-        'Only looking at Archival Object level -- NOT getting them from the hierarchy because all YWCA AOs with Digital Objects have subjects at the AO level'
-        
-        logging.debug('Retrieving Subject list from %s' % archival_object['uri'])
-        sub_list = []
-        subjects = archival_object['subjects']
-        for subject in subjects:
-            sub = subject['ref']
-            sub_rec = self.aspace.client.get(sub).json()
-            sub_list.append(sub_rec)
+    def getSubjects(self, archival_object_subjects):
+        'Modifies list of subjects for an Archival Object with proper authority id formatting'
 
-        for sub in sub_list:
+        for sub in archival_object_subjects:
             if 'authority_id' in sub.keys():
                 if sub['source'] == 'lcsh':
                     if not 'loc.gov' in sub['authority_id']:
@@ -116,14 +106,14 @@ class aspaceRecordFuncs(object):
                 else:
                     continue
 
-        return sub_list
+        return archival_object_subjects
 
 
-    def getGenreSubjects(self, subjects):
-        'Gets genre_form type subjects for Resource'
+    def getGenreSubjects(self, archival_object_subjects):
+        'Gets genre_form type subjects for Archival Object if they exist'
 
         genre_subs = []
-        for subject in subjects:
+        for subject in archival_object_subjects:
             if subject['terms'][0]['term_type'] == 'genre_form':
                 genre_subs.append(subject)
      
@@ -131,15 +121,15 @@ class aspaceRecordFuncs(object):
         return genre_subs
 
 
-    def removeGenreSubjects(self, subjects):
-        'Deleting Genre subjects from AllSubjects list because requires different tags than other subjects in template'
+    def removeGenreSubjects(self, archival_object_subjects):
+        'Deleting Genre subjects from Archival Object Subjects list because requires different tags than other subjects in template'
 
         non_genre_subs = []
-        for sub in subjects:
+        for sub in archival_object_subjects:
             if not sub['terms'][0]['term_type'] == 'genre_form':
                 non_genre_subs.append(sub)
 
-        return non_genre_subs        
+        return non_genre_subs 
 
 
     def removeEADTags(self, note):
@@ -275,45 +265,18 @@ class aspaceRecordFuncs(object):
         return obj_langs
 
 
-    def findKey(self, d, key):
-        """Find all instances of key."""
-        if key in d:
-            yield d[key]
-        for k in d:
-            if isinstance(d[k], list) and k == 'children':
-                for i in d[k]:
-                    for j in self.findKey(i, key):
-                        yield j
-
-
-    def get_all_archival_object_uris_for_resource(self, resource, repo_num):
-        endpoint = f'/repositories/{repo_num}/resources/{resource}/tree'
-        output = self.aspace.client.get(endpoint).json()
-        uris = []
-        uris.append(output['record_uri'])
-        for value in self.findKey(output, 'record_uri'):
-            if 'archival_objects' in value:
-                uris.append(value)
-
-        return uris
-
-
-    def getAgents(self, archival_object):
+    def getAgents(self, cache_obj_linked_agents, cache_obj_agents):
         'Returns agents'
-        agents_lst = []
-        if 'linked_agents' in archival_object.keys():
-            for agent in archival_object['linked_agents']:
-                agents_lst.append(agent)
 
-        new_agents_lst = []     
-        for agent in agents_lst:
-            agent_dct = {}
-            agent_dct['role'] = agent['role']
-            uri = agent['ref']
-            agent_dct['data'] = self.aspace.client.get(uri).json()
-            new_agents_lst.append(agent_dct)
-
-        for agent in new_agents_lst:
+        agents_list = []     
+        for agent in cache_obj_linked_agents:
+            agent_dict = {}
+            agent_dict['role'] = agent['role']
+            data = list(filter(lambda a: a['uri'] == agent['ref'], cache_obj_agents))
+            agent_dict['data'] = data[0]
+            agents_list.append(agent_dict) 
+        
+        for agent in agents_list:
             if agent['role'] == 'creator' or agent['role'] == 'source' or agent['role'] == 'subject':
                 if agent['data']['jsonmodel_type'] == 'agent_person':
                     agent['data']['jsonmodel_type'] = 'personal'
@@ -321,8 +284,7 @@ class aspaceRecordFuncs(object):
                     agent['data']['jsonmodel_type'] = 'corporate'
                 elif agent['data']['jsonmodel_type'] == 'agent_family':
                     agent['data']['jsonmodel_type'] = 'family'
-                else:
-                    continue
+                    
 
                 if 'display_name' in agent['data'].keys():
                     if 'authority_id' in agent['data']['display_name'].keys():
@@ -336,31 +298,14 @@ class aspaceRecordFuncs(object):
                             elif agent['data']['display_name']['source'] == 'aat':
                                 agent['data']['display_name']['authority_id'] = 'http://vocab.getty.edu/aat/' + agent['data']['display_name']['authority_id']
 
-        return new_agents_lst
+
+        deduped_list = [i for n, i in enumerate(agents_list) if i not in agents_list[n + 1:]]
+        return deduped_list
 
 
-    def getParentRecords(self, archival_object):
-        parent_uris = []
-        for i in range(100):
-            try:
-                parentUri = archival_object['parent']['ref']
-            except KeyError:
-                break
-            parent_ao = self.aspace.client.get(parentUri).json()
-            if parent_ao['uri'] not in parent_uris:
-                parent_uris.append(parent_ao['uri'])
-
-        parent_records = []
-        for uri in parent_uris:
-            parent_record = self.aspace.client.get(uri).json()
-            parent_records.append(parent_record)
-
-        return parent_records
-
-
-    def filterSubjectAgents(self, agent_list):
+    def filterSubjectAgents(self, agents_list):
         filtered_agents = []
-        for agent in agent_list:
+        for agent in agents_list:
             if agent['role'] == 'subject':
                 continue
             else:
@@ -369,23 +314,11 @@ class aspaceRecordFuncs(object):
         return filtered_agents
 
 
-    def getInheritedAgents(self, archival_object, resource):
-        '''Gets all agents from parent records apart from agents as subjects'''
-        all_agents = []
-
-        resource_agents = self.getAgents(resource)
-        all_agents.extend(resource_agents)
-
-        ao_agents = self.getAgents(archival_object)
-        all_agents.extend(ao_agents)
-
-        parent_records = self.getParentRecords(archival_object)
-        for record in parent_records:
-            parent_agents = self.getAgents(record)
-            all_agents.extend(parent_agents)
-
-        filtered_agents = self.filterSubjectAgents(all_agents)
-        return filtered_agents
+    def add_excerpts_to_title(self, notes):
+        processinfo = self.getNotesByType(notes, 'processinfo')
+        if processinfo != None:
+            if 'select material' in processinfo[0]['content'].lower():
+                return True
 
 
  

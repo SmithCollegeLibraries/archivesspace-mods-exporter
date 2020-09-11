@@ -175,7 +175,7 @@ if __name__ == "__main__":
     argparser.add_argument("OUTPUTPATH", help="File path for record output.")
     cliArguments = argparser.parse_args()
 
-    myrecordfuncs = new_record_funcs.aspaceRecordFuncs(aspace)
+    myrecordfuncs = record_funcs.aspaceRecordFuncs(aspace)
 
     list_of_repos = [2,3,4]
     

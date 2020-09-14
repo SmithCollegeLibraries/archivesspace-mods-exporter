@@ -4,7 +4,7 @@ from pprint import pprint as pp
 import argparse
 import glob
 import os.path
-import new_record_funcs
+import record_funcs
 import logging
 import json
 

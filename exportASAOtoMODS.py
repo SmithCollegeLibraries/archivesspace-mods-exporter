@@ -7,126 +7,270 @@ import os.path
 import record_funcs
 import logging
 import json
-
-
-
-def filter_out_non_compass_objs(cache):
-        compass_dos = []
-        sieve = []
-        for c in cache:
-            for fv in c['digital_object']['file_versions']:
-                if 'compass' in fv['file_uri']:
-                    if not c['digital_object']['uri'] in sieve:
-                        sieve.append(c['digital_object']['uri'])
-                        compass_dos.append(c) 
-
-        return compass_dos
-
-
-def cache_agents_or_subjects(record_json, search_type):
-    # search_type must either be 'linked_agents' or 'subjects'
-    lst = []
-    if len(record_json[search_type]) > 0:
-        for i in record_json[search_type]:
-            i_json = aspace.client.get(i['ref']).json()
-            if not i_json in lst:
-                lst.append(i_json)
-
-    return lst
-
-
-def get_resource_agents(dict_of_resources, search_type='linked_agents'):
-    # search_type must be 'linked_agents'
-    resource_objs = {}
-    for k in dict_of_resources.keys():
-        record_json = dict_of_resources[k]
-        objs = cache_agents_or_subjects(record_json, search_type)
-        resource_objs[record_json['uri']] = objs
-
-    return resource_objs
-
-
-def add_resource_agents_to_cache(cache, resource_agents):
-    for do_dict in cache:
-        do_dict['resource_agents'] = []
-        try:
-            if resource_agents.get(do_dict['resource']['uri']) != None:
-                do_dict['resource_agents'] = resource_agents[do_dict['resource']['uri']]
-        except KeyError:
-            continue
-
-        do_dict['all_agents'] = do_dict['resource_agents'] + do_dict['archival_object_agents']
-        try:
-            do_dict['all_linked_agents'] = do_dict['resource']['linked_agents'] + do_dict['archival_object']['linked_agents']
-        except KeyError:
-            do_dict['all_linked_agents'] = do_dict['resource']['linked_agents']
-        except KeyError:
-            do_dict['all_linked_agents'] = []       
-         
-    return cache
+import time as t
 
 
 def set_dict(do):
     d = {}
-    d['digital_object'] = do.json()
+    d['digital_object'] = do
     d['archival_object'] = {}
     d['resource'] = {}
-    d['archival_object_agents'] = []
     d['archival_object_subjects'] = []
-    d['resource_agents'] = []
-    d['all_agents'] = []
+    d['creators'] = []
+    d['sources'] = []
+    d['subject_agents'] = []
 
     return d    
 
 
-def run_one_or_all(repo, number=''):
-    if len(str(number)) > 0:
-        dos = []
-        do = repo.digital_objects(int(number))
-        dos.append(do)
-        return dos
+def chunk_ids(id_list):
+    ids = []
+    if len(id_list) > 25:
+        id_chunks = [id_list[uri:uri + 25] for uri in range(0, len(id_list), 25)] 
+        for chunk in id_chunks:
+            chunk = [str(i) for i in chunk]
+            chunk = ','.join(chunk)
+            ids.append(chunk)
+    
     else:
-        dos = repo.digital_objects()
-        return dos
+        id_list = [str(i) for i in id_list]
+        id_list = ','.join(id_list)
+        ids.append(id_list)
+
+    return ids
 
 
-def make_cache(list_of_repos):
-    cache = []
-    resources = {}
-    for r in list_of_repos:
-        repo = aspace.repositories(r)
-        logging.info('Making cache for repo {}'.format(r))
-        dos = run_one_or_all(repo)
-        for do in dos:
-            do_dict = set_dict(do)
-            try:
-                if 'archival_objects' in do_dict['digital_object']['linked_instances'][0]['ref']: # So don't get JSON for accession, etc.
-                    do_dict['archival_object'] = aspace.client.get(do_dict['digital_object']['linked_instances'][0]['ref']).json()
-                    do_dict['archival_object_agents'] = cache_agents_or_subjects(do_dict['archival_object'], 'linked_agents')
-                    do_dict['archival_object_subjects'] = cache_agents_or_subjects(do_dict['archival_object'], 'subjects')  
-            except IndexError:
-                continue
-            try:
-                if resources.get(do_dict['archival_object']['resource']['ref']) != None:
-                    do_dict['resource'] = resources[do_dict['archival_object']['resource']['ref']]
+def group_uris(uri_list):
+    all_uris = {}
+    all_uris['2'] = []
+    all_uris['3'] = []
+    all_uris['4'] = []
+    for uri in uri_list:
+        if '/repositories/2' in uri:
+            all_uris['2'].append(uri.split('/')[-1])
+        elif '/repositories/3' in uri:
+            all_uris['3'].append(uri.split('/')[-1])
+        elif '/repositories/4' in uri:
+            all_uris['4'].append(uri.split('/')[-1])
+
+    return all_uris
+
+
+def group_agents(uri_list):
+    all_uris = {}
+    all_uris['corporate_entities'] = []
+    all_uris['people'] = []
+    all_uris['families'] = []
+    for uri in uri_list:
+        if 'corporate' in uri:
+            all_uris['corporate_entities'].append(uri.split('/')[-1])
+        elif 'people' in uri:
+            all_uris['people'].append(uri.split('/')[-1])
+        elif 'families' in uri:
+            all_uris['families'].append(uri.split('/')[-1])
+
+    return all_uris
+
+
+def get_data_dict():
+    extracted_data = {}
+    extracted_data['digital_objects'] = []
+    extracted_data['archival_objects'] = []
+    extracted_data['accessions'] = []
+    extracted_data['resources'] = []    
+    extracted_data['subjects'] = []
+    extracted_data['agents'] = []
+
+    return extracted_data
+
+
+def get_digital_objects(repo):
+    r = aspace.repositories(repo)
+    dos = r.digital_objects()
+    digital_objects = []
+    for do in dos:
+        for file_version in do.json()['file_versions']:
+            if 'compass' in file_version['file_uri']:
+                if not do.json() in digital_objects:
+                    digital_objects.append(do.json())
+
+    return digital_objects
+
+
+def get_digital_objects_by_repo(list_of_repos, data_dict):
+    for repo in list_of_repos:  
+        data_dict['digital_objects'].extend(get_digital_objects(repo))
+
+    return data_dict
+
+
+def get_parent_objects(data_dict):
+    all_ao_uris = []
+    for do in data_dict['digital_objects']:
+        for instance in do['linked_instances']:
+            if 'archival_objects' in instance['ref']:
+                if not instance['ref'] in all_ao_uris:
+                    all_ao_uris.append(instance['ref'])
                 else:
-                    resource = aspace.client.get(do_dict['archival_object']['resource']['ref']).json()
-                    resources[resource['uri']] = resource # resource['uri'] should equal do_dict['archival_object']['resource']['ref']
-                    do_dict['resource'] = resource
-            except KeyError:
-                continue
-            cache.append(do_dict)
+                    record = aspace.client.get(instance['ref'])
+                    if 'resources' in instance['ref']:
+                        data_dict['resources'].append(record.json())
+                    elif 'accessions' in instance['ref']:
+                        data_dict['accessions'].append(record.json())
 
-    resource_agents = get_resource_agents(resources, 'linked_agents')
+    aos_grouped_by_repo = group_uris(all_ao_uris)
+    for k, v in aos_grouped_by_repo.items():
+        chunks = chunk_ids(v)
+        for chunk in chunks:
+            archival_objects = aspace.client.get(f'/repositories/{k}/archival_objects?id_set={chunk}')
+            data_dict['archival_objects'].extend(archival_objects.json())
 
-    return add_resource_agents_to_cache(cache, resource_agents)
+    return data_dict
 
 
-def get_value(myrecipe):
+def get_resources(data_dict):
+    resource_uris = []
+    for ao in data_dict['archival_objects']:
+        try:
+            if not ao['resource']['ref'] in resource_uris:
+                resource_uris.append(ao['resource']['ref'])
+        except TypeError as e:
+            continue
+
+    resources_grouped_by_repo = group_uris(resource_uris)
+    for k, v in resources_grouped_by_repo.items():
+        chunks = chunk_ids(v)
+        for chunk in chunks:
+            resources = aspace.client.get(f'/repositories/{k}/resources?id_set={chunk}')
+            data_dict['resources'].extend(resources.json())
+
+    return data_dict
+
+
+def get_agents(data_dict):
+    agent_uris = []
+    for ao in data_dict['archival_objects']:
+        if len(ao['linked_agents']) > 0:
+            for agent in ao['linked_agents']:
+                if not agent['ref'] in agent_uris:
+                    agent_uris.append(agent['ref'])
+
+    for r in data_dict['resources']:
+        if len(r['linked_agents']) > 0:
+            for agent in r['linked_agents']:
+                if agent['role']!= 'subject':
+                    if agent['ref'] not in agent_uris:
+                        agent_uris.append(agent['ref'])
+
+    agents_grouped_by_type = group_agents(agent_uris)
+    for k, v in agents_grouped_by_type.items():
+        chunks = chunk_ids(v)
+        for chunk in chunks:
+            agents = aspace.client.get(f'/agents/{k}?id_set={chunk}')
+            data_dict['agents'].extend(agents.json())
+
+    return data_dict
+
+
+def get_subjects(data_dict):
+    subject_uris = []
+    for ao in data_dict['archival_objects']:
+        if len(ao['subjects']) > 0:
+            for subject in ao['subjects']:
+                if not subject['ref'] in subject_uris:
+                    subject_uris.append(subject['ref'].split('/')[-1])
+
+    chunks = chunk_ids(subject_uris)
+    for chunk in chunks:
+        subjects = aspace.client.get(f'/subjects?id_set={chunk}')
+        data_dict['subjects'].extend(subjects.json())
+
+    return data_dict
+
+
+def get_extract(list_of_repos):
+    data_dict = get_data_dict()
+    return get_subjects(get_agents(get_resources(get_parent_objects(get_digital_objects_by_repo(list_of_repos, data_dict)))))
+
+
+def match_subjects_to_archival_objects(extract, dict_obj):
     try:
-        myrecipe
-    except Exception as e:
-        return ''
+        for sub in dict_obj['archival_object']['subjects']:
+            for s in extract['subjects']:
+                if sub['ref'] == s['uri']:
+                    dict_obj['archival_object_subjects'].append(s)
+    except TypeError:
+        pass
+    except KeyError:
+        pass
+
+    return dict_obj
+
+
+def match_agents(extract, dict_obj):
+    try:
+        for a in dict_obj['archival_object']['linked_agents']:
+            for agent in extract['agents']:
+                try:
+                    if a['ref'] == agent['uri']:
+                        if a['role'] == 'creator':
+                            dict_obj['creators'].append(agent)
+                        elif a['role'] == 'source':
+                            dict_obj['sources'].append(agent)
+                        elif a['role'] == 'subject':
+                            dict_obj['subject_agents'].append(agent)
+                except TypeError:
+                    pass
+    except KeyError:
+        pass
+
+    try:
+        for a in dict_obj['resource']['linked_agents']:
+            for agent in extract['agents']:
+                try:
+                    if a['ref'] == agent['uri']:
+                        if a['role'] == 'creator':
+                            dict_obj['creators'].append(agent)
+                except TypeError:
+                    pass
+    except KeyError:
+        pass
+
+    dict_obj['creators'] = [i for n, i in enumerate(dict_obj['creators']) if i not in dict_obj['creators'][n + 1:]]
+    dict_obj['sources'] = [i for n, i in enumerate(dict_obj['sources']) if i not in dict_obj['sources'][n + 1:]] 
+    dict_obj['subject_agents'] = [i for n, i in enumerate(dict_obj['subject_agents']) if i not in dict_obj['subject_agents'][n + 1:]]  
+    
+    return dict_obj
+
+
+def match_archival_objects_to_resources(extract, dict_obj):
+    try:
+        for r in extract['resources']:
+            if r['uri'] == dict_obj['archival_object']['resource']['ref']:
+                dict_obj['resource'] = r
+    except KeyError:
+        pass
+
+    return dict_obj
+
+
+def match_extract_objects(extract):
+    dicts = []
+    for d in extract['digital_objects']:
+        dict_obj = set_dict(d)
+        for a in extract['archival_objects']:
+            for inst in d['linked_instances']:
+                if a['uri'] == inst['ref']:
+                    dict_obj['archival_object'] = a
+        try:
+            dict_obj = match_archival_objects_to_resources(extract, dict_obj)
+        except KeyError:
+            pass
+        dict_obj = match_subjects_to_archival_objects(extract, dict_obj)
+        dict_obj = match_agents(extract, dict_obj)
+        dicts.append(dict_obj) 
+
+    return dicts
 
 
 def render_record(mapping): 
@@ -147,7 +291,9 @@ def make_mapping(cache_obj):
         'repository': myrecordfuncs.getRepository(cache_obj['digital_object']), 
         'subjects': myrecordfuncs.removeGenreSubjects(myrecordfuncs.getSubjects(cache_obj['archival_object_subjects'])), 
         'genre_subs': myrecordfuncs.getGenreSubjects(cache_obj['archival_object_subjects']), 
-        'agents': myrecordfuncs.filterSubjectAgents(myrecordfuncs.getAgents(cache_obj['all_linked_agents'], cache_obj['all_agents'])), 
+        'sources': cache_obj['sources'], 
+        'creators': cache_obj['creators'],
+        'subject_agents': cache_obj['subject_agents'],
         'collecting_unit': myrecordfuncs.getCollectingUnit(myrecordfuncs.getRepository(cache_obj['digital_object'])), 
         'ms_no': myrecordfuncs.getMsNo(cache_obj['archival_object'], cache_obj['resource']), 
         'digital_object': cache_obj['digital_object'], 
@@ -159,9 +305,6 @@ def make_mapping(cache_obj):
         'excerpts': myrecordfuncs.add_excerpts_to_title(myrecordfuncs.getNotesTree(cache_obj['archival_object'], cache_obj['resource']))
         }
 
-
-    for key, value in mapping.items():
-        key = get_value(value)
 
     return mapping
 
@@ -177,15 +320,28 @@ if __name__ == "__main__":
 
     myrecordfuncs = record_funcs.aspaceRecordFuncs(aspace)
 
-    list_of_repos = [2,3,4]
+    repos = aspace.client.get('/repositories?all_ids=true').json()
+    list_of_repos = []
+    for repo in repos:
+        repo_id = repo['uri'].split('/')[-1]
+        list_of_repos.append(repo_id)
     
-    cache = filter_out_non_compass_objs(make_cache(list_of_repos))        
-    
+    start = t.perf_counter()
+    cache = get_extract(list_of_repos)
+    end = t.perf_counter()
+    pp(f'Extract: {(end - start) / 60} mins')
+
+    start = t.perf_counter()
+    extract_objects = match_extract_objects(cache)
+    end = t.perf_counter()
+    pp(f'Match: {(end - start) / 60} mins')
+
+    start = t.perf_counter()
     save_path = cliArguments.OUTPUTPATH
 
     count = 0
     if os.path.isdir(save_path) != False:
-        for obj in cache:
+        for obj in extract_objects:
             try:
                 count += 1
                 pp(count)
@@ -208,6 +364,7 @@ if __name__ == "__main__":
     else:
         logging.error("Directory not found. Please create if not created. Files cannot be written without an existing directory to store them.")
         exit(1)
-
+    end = t.perf_counter()
+    pp(f'Writing: {(end - start) / 60} mins')
 
 

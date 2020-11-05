@@ -335,50 +335,45 @@ if __name__ == "__main__":
         repo_id = repo['uri'].split('/')[-1]
         list_of_repos.append(repo_id)
     
-    data_dict = get_data_dict()
-    d = get_digital_objects_by_repo(list_of_repos, data_dict)
-    for o in d['digital_objects']:
-        if o['uri'] == '/repositories/2/digital_objects/1283':
-            pp(o)
-    # start = t.perf_counter()
-    # cache = get_extract(list_of_repos)
-    # end = t.perf_counter()
-    # pp(f'Extract: {(end - start) / 60} mins')
+    start = t.perf_counter()
+    cache = get_extract(list_of_repos)
+    end = t.perf_counter()
+    pp(f'Extract: {(end - start) / 60} mins')
 
-    # start = t.perf_counter()
-    # extract_objects = match_extract_objects(cache)
-    # end = t.perf_counter()
-    # pp(f'Match: {(end - start) / 60} mins')
+    start = t.perf_counter()
+    extract_objects = match_extract_objects(cache)
+    end = t.perf_counter()
+    pp(f'Match: {(end - start) / 60} mins')
 
-    # start = t.perf_counter()
-    # save_path = cliArguments.OUTPUTPATH
+    start = t.perf_counter()
+    save_path = cliArguments.OUTPUTPATH
 
-    # count = 0
-    # if os.path.isdir(save_path) != False:
-    #     for obj in extract_objects:
-    #         try:
-    #             count += 1
-    #             pp(count)
-    #             logging.debug('Rendering MODS record for %s' % obj['digital_object']['uri'])
-    #             xml = render_record(make_mapping(obj))
-    #             handle = myrecordfuncs.getModsFileName(obj['digital_object'])
-    #             filename = os.path.join(save_path, handle + ".xml")
+    count = 0
+    if os.path.isdir(save_path) != False:
+        for obj in extract_objects:
+            try:
+                count += 1
+                pp(count)
+                logging.debug('Rendering MODS record for %s' % obj['digital_object']['uri'])
+                xml = render_record(make_mapping(obj))
+                handle = myrecordfuncs.getModsFileName(obj['digital_object'])
+                filename = os.path.join(save_path, handle + ".xml")
 
-    #             try:
-    #                 with open(filename, "w") as fh:
-    #                     logging.info('Writing %s' % filename)
-    #                     fh.write(xml)
-    #             except Exception as e:
-    #                 logging.error(e)
-    #         except Exception as e:
-    #             logging.error(e)
+                try:
+                    with open(filename, "w") as fh:
+                        logging.info('Writing %s' % filename)
+                        fh.write(xml)
+                except Exception as e:
+                    logging.error(e)
+            except Exception as e:
+                logging.error(e)
 
-    #     logging.info('All files written.')        
+        logging.info('All files written.')        
 
-    # else:
-    #     logging.error("Directory not found. Please create if not created. Files cannot be written without an existing directory to store them.")
-    #     exit(1)
-    # end = t.perf_counter()
-    # pp(f'Writing: {(end - start) / 60} mins')
+    else:
+        logging.error("Directory not found. Please create if not created. Files cannot be written without an existing directory to store them.")
+        exit(1)
+    end = t.perf_counter()
+    pp(f'Writing: {(end - start) / 60} mins')
 
 

@@ -19,6 +19,7 @@ def set_dict(do):
     d['creators'] = []
     d['sources'] = []
     d['subject_agents'] = []
+    d['top_container'] = {}
 
     return d    
 
@@ -80,6 +81,7 @@ def get_data_dict():
     extracted_data['resources'] = []    
     extracted_data['subjects'] = []
     extracted_data['agents'] = []
+    extracted_data['top_containers'] = []
 
     return extracted_data
 
@@ -91,7 +93,7 @@ def get_digital_objects(repo):
     for do in dos:
         if 'user_defined' in do.json().keys():
             if do.json()['user_defined']['boolean_1'] == True:
-                break
+                continue
         
         for file_version in do.json()['file_versions']:
             if 'compass' in file_version['file_uri']:
@@ -176,6 +178,18 @@ def get_agents(data_dict):
     return data_dict
 
 
+def correct_agent_type(data_dict):
+    for a in data_dict['agents']:
+        if a['jsonmodel_type'] == 'agent_person':
+            a['jsonmodel_type'] = 'personal'
+        elif a['jsonmodel_type'] == 'agent_corporate_entity':
+            a['jsonmodel_type'] = 'corporate'
+        elif a['jsonmodel_type'] == 'agent_family':
+            a['jsonmodel_type'] = 'family'
+
+    return data_dict
+
+
 def get_subjects(data_dict):
     subject_uris = []
     for ao in data_dict['archival_objects']:
@@ -192,13 +206,35 @@ def get_subjects(data_dict):
     return data_dict
 
 
+def get_top_containers(data_dict):
+    top_container_uris = []
+    for ao in data_dict['archival_objects']:
+        if len(ao['instances']) > 0:
+            for i in ao['instances']:
+                try:
+                    if not i['sub_container']['top_container']['ref'] in top_container_uris:
+                        top_container_uris.append(i['sub_container']['top_container']['ref'])
+                except KeyError:
+                    pass
+    grouped_by_repo = group_uris(top_container_uris)
+    for k, v in grouped_by_repo.items():
+        chunks = chunk_ids(v)
+        for chunk in chunks:
+            tcs = aspace.client.get(f'/repositories/{k}/top_containers?id_set={chunk}')
+            data_dict['top_containers'].extend(tcs.json())
+
+    return data_dict
+
+
 def get_extract(list_of_repos):
     data_dict = get_data_dict()
     data_dict = get_digital_objects_by_repo(list_of_repos, data_dict)
     data_dict = get_parent_objects(data_dict)
     data_dict = get_resources(data_dict)
-    data_dict = get_agents(data_dict)
+    data_dict = correct_agent_type(get_agents(data_dict))
     data_dict = get_subjects(data_dict)
+    data_dict = get_top_containers(data_dict)
+    
     return data_dict
 
 
@@ -210,6 +246,18 @@ def match_subjects_to_archival_objects(extract, dict_obj):
                     dict_obj['archival_object_subjects'].append(s)
     except TypeError:
         pass
+    except KeyError:
+        pass
+
+    return dict_obj
+
+
+def match_top_containers_to_archival_objects(extract, dict_obj):
+    try:
+        for i in dict_obj['archival_object']['instances']:
+            for t in extract['top_containers']:
+                if i['sub_container']['top_container']['ref'] == t['uri']:
+                    dict_obj['top_container'] = t
     except KeyError:
         pass
 
@@ -277,6 +325,7 @@ def match_extract_objects(extract):
             pass
         dict_obj = match_subjects_to_archival_objects(extract, dict_obj)
         dict_obj = match_agents(extract, dict_obj)
+        dict_obj = match_top_containers_to_archival_objects(extract, dict_obj)
         dicts.append(dict_obj) 
 
     return dicts
@@ -297,17 +346,17 @@ def make_mapping(cache_obj):
         'archival_object': cache_obj['archival_object'], 
         'resource': cache_obj['resource'], 
         'langs': myrecordfuncs.getLangAtAOLevel(cache_obj['archival_object'], cache_obj['resource']), 
-        'repository': myrecordfuncs.getRepository(cache_obj['digital_object']), 
+        'repository': myrecordfuncs.getCollectingUnit(cache_obj['digital_object']), 
         'subjects': myrecordfuncs.removeGenreSubjects(myrecordfuncs.getSubjects(cache_obj['archival_object_subjects'])), 
         'genre_subs': myrecordfuncs.getGenreSubjects(cache_obj['archival_object_subjects']), 
         'sources': cache_obj['sources'], 
         'creators': cache_obj['creators'],
         'subject_agents': cache_obj['subject_agents'],
-        'collecting_unit': myrecordfuncs.getCollectingUnit(myrecordfuncs.getRepository(cache_obj['digital_object'])), 
-        'ms_no': myrecordfuncs.getMsNo(cache_obj['archival_object'], cache_obj['resource']), 
+        'collecting_unit': myrecordfuncs.getParentInstitution(), 
+        'ms_no': myrecordfuncs.getMsNo(cache_obj['resource']), 
         'digital_object': cache_obj['digital_object'], 
         'folder': myrecordfuncs.getFolder(cache_obj['archival_object']), 
-        'container': myrecordfuncs.getShelfLocation(cache_obj['archival_object']), 
+        'container': myrecordfuncs.getBoxString(cache_obj['top_container']), 
         'abstract': myrecordfuncs.getNotesByType(myrecordfuncs.getNotesTree(cache_obj['archival_object'], cache_obj['resource']), 'scopecontent'), 
         'userestrict': myrecordfuncs.getNotesByType(myrecordfuncs.getNotesTree(cache_obj['archival_object'], cache_obj['resource']), 'userestrict'), 
         'accessrestrict': myrecordfuncs.getNotesByType(myrecordfuncs.getNotesTree(cache_obj['archival_object'], cache_obj['resource']), 'accessrestrict'), 

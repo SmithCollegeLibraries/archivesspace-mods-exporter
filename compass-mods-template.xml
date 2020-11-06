@@ -33,7 +33,7 @@
 
 <!-- Repository name -->
 <name>
-  <namePart>{{collecting_unit|e}}</namePart>
+  <namePart>{{repository|e}}</namePart>
   <role><roleTerm authority="local" type="text">Unit</roleTerm></role>
 </name>
 
@@ -171,10 +171,10 @@
 
 <!-- Parent institution -->
 <location>
-  <physicalLocation>{{repository.parent_institution_name}}</physicalLocation>
+  <physicalLocation>{{collecting_unit}}</physicalLocation>
 </location>
 
 <!-- Preferred Citation -->
-<note type="preferred citation" displayLabel="Preferred Citation">{%- if archival_object|length > 1 %}{{archival_object.title.rstrip()|e}},{%- endif %} {{collecting_unit}},  {%- if ms_no|length > 1 %} {{ms_no}},{%- endif %} {{repository.parent_institution_name}}, Northampton, Massachusetts.</note>
+<note type="preferred citation" displayLabel="Preferred Citation">{%- if archival_object|length > 1 %}{{archival_object.title.rstrip()|e}},{%- endif %} {{repository}},  {%- if ms_no|length > 1 %} {{ms_no}},{%- endif %} {{collecting_unit}}, Northampton, Massachusetts.</note>
 
 </mods>

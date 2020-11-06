@@ -11,17 +11,12 @@ class aspaceRecordFuncs(object):
         self.aspace = aspace
 
 
-    def getShelfLocation(self, archival_object):
+    def getBoxString(self, top_container):
         'Get the Shelf Location of a given Archival Object'
-
-        logging.debug('Retrieving Shelf Location of Archival Object %s' % archival_object['uri'])
         try:
-            top_container_uri = archival_object['instances'][0]['sub_container']['top_container']['ref']
-            top_container = self.aspace.client.get(top_container_uri).json()
+            return top_container['display_string']
         except KeyError:
             return None
-
-        return top_container['display_string']
 
 
     def getFolder(self, archival_object):
@@ -37,26 +32,31 @@ class aspaceRecordFuncs(object):
         return fol + " " + num
 
 
-    def getRepository(self, digital_object): # Can hard code this
+    def getCollectingUnit(self, digital_object): # Can hard code this
         'Get the repository of a given Archival Object'
 
         logging.debug('Retrieving Repository of Archival Object %s' % digital_object['uri'])
         repository_uri = digital_object['uri'].split('/digital_objects')[0]
-        repository = self.aspace.client.get(repository_uri).json()
+        if repository_uri == '/repositories/2':
+            repository = "Sophia Smith Collection of Women's History"
+        elif repository_uri == '/repositories/3':
+            repository = "Mortimer Rare Book Collection"
+        elif repository_uri == '/repositories/4':
+            repository = "Smith College Archives"
         
         return repository
 
 
-    def getCollectingUnit(self, repository):
+    def getParentInstitution(self):
         'Get the collecting unit of a given Archival Object'
+        name = 'Smith College Special Collections'
+        return name
 
-        return repository['name']
 
-
-    def getMsNo(self, archival_object, resource):
+    def getMsNo(self, resource):
         'Get the MS number of a given Archival Object'
 
-        logging.debug('Retrieving MS number of Archival Object %s' % archival_object['uri'])
+        logging.debug('Retrieving MS number of Archival Object %s' % resource['uri'])
         try:
             id_1 = resource['id_1']
             id_2 = resource['id_2']
@@ -106,6 +106,7 @@ class aspaceRecordFuncs(object):
                 else:
                     continue
 
+        archival_object_subjects = [i for n, i in enumerate(archival_object_subjects) if i not in archival_object_subjects[n + 1:]]
         return archival_object_subjects
 
 
@@ -116,7 +117,8 @@ class aspaceRecordFuncs(object):
         for subject in archival_object_subjects:
             if subject['terms'][0]['term_type'] == 'genre_form':
                 genre_subs.append(subject)
-     
+        
+        genre_subs = [i for n, i in enumerate(genre_subs) if i not in genre_subs[n + 1:]]
 
         return genre_subs
 
@@ -192,34 +194,6 @@ class aspaceRecordFuncs(object):
                 except Exception as e:
                     logging.error(e)
 
-            if 'parent' in archival_object.keys():
-                parent = archival_object['parent']['ref']
-                parent_record = self.aspace.client.get(parent).json()
-                if 'notes' in parent_record.keys():
-                    notes = parent_record['notes']
-                    for note in notes:
-                        logging.debug('Retrieving available notes from parent of %s' % archival_object['uri'])
-                        try:
-                            tup = self.getNoteTup(note)
-                            if tup != None:
-                                note_tups.append(tup)
-                        except Exception as e:
-                            logging.error(e)
-
-                if 'parent' in parent_record.keys():
-                    grandparent = parent_record['parent']['ref']
-                    grandparent_record = self.aspace.client.get(grandparent).json()
-                    if 'notes' in grandparent_record.keys():
-                        notes = grandparent_record['notes']
-                        for note in notes:
-                            logging.debug('Retrieving available notes from grandparent of %s' % archival_object['uri'])
-                            try:
-                                tup = self.getNoteTup(note)
-                                if tup != None:
-                                    note_tups.append(tup)
-                            except Exception as e:
-                                logging.error(e)
-
             resource_notes = self.getNotesByResource(resource)
             note_tups.extend(resource_notes)
 
@@ -263,44 +237,6 @@ class aspaceRecordFuncs(object):
             logging.debug(e)
 
         return obj_langs
-
-
-    def getAgents(self, cache_obj_linked_agents, cache_obj_agents):
-        'Returns agents'
-
-        agents_list = []     
-        for agent in cache_obj_linked_agents:
-            agent_dict = {}
-            agent_dict['role'] = agent['role']
-            data = list(filter(lambda a: a['uri'] == agent['ref'], cache_obj_agents))
-            agent_dict['data'] = data[0]
-            agents_list.append(agent_dict) 
-        
-        for agent in agents_list:
-            if agent['role'] == 'creator' or agent['role'] == 'source' or agent['role'] == 'subject':
-                if agent['data']['jsonmodel_type'] == 'agent_person':
-                    agent['data']['jsonmodel_type'] = 'personal'
-                elif agent['data']['jsonmodel_type'] == 'agent_corporate_entity':
-                    agent['data']['jsonmodel_type'] = 'corporate'
-                elif agent['data']['jsonmodel_type'] == 'agent_family':
-                    agent['data']['jsonmodel_type'] = 'family'
-                    
-
-                if 'display_name' in agent['data'].keys():
-                    if 'authority_id' in agent['data']['display_name'].keys():
-                        if agent['data']['display_name']['source'] == 'naf':
-                            if 'loc.gov' not in agent['data']['display_name']['authority_id']:
-                                agent['data']['display_name']['authority_id'] = 'http://id.loc.gov/authorities/names/' + agent['data']['display_name']['authority_id']
-                            elif agent['data']['display_name']['source'] == 'lcsh':
-                                agent['data']['display_name']['authority_id'] = 'http://id.loc.gov/authorities/subjects/' + agent['data']['display_name']['authority_id']
-                            elif agent['data']['display_name']['source'] == 'tgn':
-                                agent['data']['display_name']['authority_id'] = 'http://vocab.getty.edu/tgn/' + agent['data']['display_name']['authority_id']
-                            elif agent['data']['display_name']['source'] == 'aat':
-                                agent['data']['display_name']['authority_id'] = 'http://vocab.getty.edu/aat/' + agent['data']['display_name']['authority_id']
-
-
-        deduped_list = [i for n, i in enumerate(agents_list) if i not in agents_list[n + 1:]]
-        return deduped_list
 
 
     def filterSubjectAgents(self, agents_list):
